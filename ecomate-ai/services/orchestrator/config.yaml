@@ -1,0 +1,4 @@
+router:
+  draft: ollama:qwen2.5:14b-instruct
+  reason: vertex:gemini-1.5-pro
+  classify: openai:gpt-4.1-mini  # optional; leave unused if not available

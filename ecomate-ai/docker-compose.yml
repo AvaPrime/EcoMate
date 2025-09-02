@@ -1,0 +1,42 @@
+version: "3.8"
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+      POSTGRES_DB: ${PGDATABASE:-ecomate}
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./storage/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports: ["9000:9000","9001:9001"]
+    volumes:
+      - minio:/data
+
+  temporal:
+    image: temporalio/auto-setup:1.24.0
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PWD: ${PGPASSWORD:-postgres}
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/temporal_docker.yaml
+    ports: ["7233:7233","8088:8088"]
+
+  nats:
+    image: nats:2.10
+    command: ["-js"]
+    ports: ["4222:4222","8222:8222"]
+
+volumes:
+  pgdata: {}
+  minio: {}
