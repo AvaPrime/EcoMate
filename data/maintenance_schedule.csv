@@ -1,0 +1,16 @@
+Task ID,Task Description,Frequency,Duration (Hours),Skill Level,Tools Required,Safety Requirements,Cost Estimate
+M001,Visual inspection of tanks and pipework,Monthly,1,Basic,Flashlight,Safety vest,R200
+M002,Clean inlet screens and remove debris,Monthly,0.5,Basic,Gloves tools,PPE required,R150
+M003,Check and clean air vents,Monthly,0.5,Basic,Ladder tools,Fall protection,R100
+M004,Inspect and service blower unit,Quarterly,2,Intermediate,Multimeter tools,Electrical safety,R800
+M005,Check pump operation and vibration,Quarterly,1.5,Intermediate,Vibration meter,Confined space,R600
+M006,Calibrate level sensors,Quarterly,1,Advanced,Calibration kit,Electrical safety,R400
+M007,Test emergency alarm systems,Quarterly,0.5,Basic,Test equipment,None,R200
+M008,Sludge level measurement,6-Monthly,1,Intermediate,Sludge judge,PPE required,R300
+M009,Effluent quality sampling,6-Monthly,2,Advanced,Sample bottles,Lab safety,R1200
+M010,UV lamp replacement and cleaning,Annual,2,Intermediate,UV meter tools,UV protection,R1500
+M011,Instrument calibration (pH DO),Annual,3,Advanced,Calibration solutions,Chemical safety,R2000
+M012,Electrical panel inspection,Annual,2,Advanced,Electrical tools,Electrical safety,R1000
+M013,Pump overhaul and seal replacement,Annual,4,Advanced,Pump tools,Confined space,R3000
+M014,System performance evaluation,Annual,6,Expert,Test equipment,Full PPE,R5000
+M015,Emergency response drill,Annual,2,All levels,Communication equipment,Safety protocols,R500

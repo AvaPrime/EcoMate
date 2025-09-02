@@ -1,0 +1,16 @@
+Supplier ID,Company Name,Category,Contact Person,Email,Phone,Address,City,Province,Postal Code,Rating,Delivery Performance,Quality Score,Cost Competitiveness,Last Review Date
+SUP001,AquaTech SA,Tanks & Vessels,John Smith,john@aquatech.co.za,011-555-0101,123 Industrial Ave,Johannesburg,Gauteng,2001,4.5,95%,4.8,4.2,2024-01-15
+SUP002,PumpCorp,Pumps & Blowers,Sarah Johnson,sarah@pumpcorp.co.za,021-555-0202,456 Marine Dr,Cape Town,Western Cape,8001,4.7,98%,4.9,4.0,2024-01-20
+SUP003,FlowMax,Pumps,Mike Wilson,mike@flowmax.co.za,031-555-0303,789 Harbor Rd,Durban,KwaZulu-Natal,4001,4.3,92%,4.5,4.5,2024-01-10
+SUP004,UVTech,Disinfection,Lisa Brown,lisa@uvtech.co.za,011-555-0404,321 Tech Park,Pretoria,Gauteng,0001,4.6,96%,4.7,3.8,2024-01-25
+SUP005,AutoControl,Electrical,David Lee,david@autocontrol.co.za,021-555-0505,654 Circuit St,Cape Town,Western Cape,8002,4.4,94%,4.6,4.1,2024-01-18
+SUP006,SensorTech,Instrumentation,Emma Davis,emma@sensortech.co.za,011-555-0606,987 Sensor Ave,Johannesburg,Gauteng,2002,4.8,99%,4.9,3.9,2024-01-22
+SUP007,BubbleTech,Aeration,Tom Anderson,tom@bubbletech.co.za,031-555-0707,147 Bubble Rd,Durban,KwaZulu-Natal,4002,4.2,90%,4.4,4.3,2024-01-12
+SUP008,PipeCorp,Pipework,Jane Miller,jane@pipecorp.co.za,021-555-0808,258 Pipe St,Cape Town,Western Cape,8003,4.5,97%,4.7,4.4,2024-01-16
+SUP009,ValveTech,Valves,Chris Taylor,chris@valvetech.co.za,011-555-0909,369 Valve Way,Pretoria,Gauteng,0002,4.3,93%,4.5,4.2,2024-01-14
+SUP010,MechSys,Mechanical,Amy White,amy@mechsys.co.za,031-555-1010,741 Mech Dr,Durban,KwaZulu-Natal,4003,4.6,95%,4.8,3.7,2024-01-21
+SUP011,AnalyTech,Instrumentation,Robert Green,robert@analytech.co.za,021-555-1111,852 Analysis Ave,Cape Town,Western Cape,8004,4.7,98%,4.9,3.8,2024-01-19
+SUP012,SafetyFirst,Safety Equipment,Helen Clark,helen@safetyfirst.co.za,011-555-1212,963 Safety Blvd,Johannesburg,Gauteng,2003,4.4,96%,4.6,4.0,2024-01-17
+SUP013,SolarTech,Solar Power,Mark Thompson,mark@solartech.co.za,021-555-1313,159 Solar St,Cape Town,Western Cape,8005,4.5,94%,4.7,4.1,2024-01-23
+SUP014,EarthWorks Pro,Excavation,Steve Martinez,steve@earthworks.co.za,031-555-1414,357 Dig Rd,Durban,KwaZulu-Natal,4004,4.2,91%,4.3,4.4,2024-01-11
+SUP015,ElectroSafe,Electrical Installation,Maria Rodriguez,maria@electrosafe.co.za,011-555-1515,468 Electric Ave,Pretoria,Gauteng,0003,4.6,97%,4.8,3.9,2024-01-24

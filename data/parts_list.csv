@@ -1,0 +1,16 @@
+Part Number,Description,Category,Supplier,Unit Cost,Lead Time (Days),Stock Level,Reorder Point
+WT-001,Primary Settlement Tank 5000L,Tanks,AquaTech SA,R45000,21,2,1
+WT-002,Aeration Blower 2.2kW,Blowers,PumpCorp,R18500,14,3,2
+WT-003,Submersible Effluent Pump,Pumps,FlowMax,R8500,10,5,3
+WT-004,UV Disinfection Unit 25W,Disinfection,UVTech,R12000,28,2,1
+WT-005,Control Panel IP65,Electrical,AutoControl,R15000,21,1,1
+WT-006,Level Sensor Ultrasonic,Sensors,SensorTech,R3500,7,4,2
+WT-007,Air Diffuser Membrane,Aeration,BubbleTech,R850,14,10,5
+WT-008,PVC Pipe 110mm x 6m,Pipework,PipeCorp,R450,3,20,10
+WT-009,Gate Valve 100mm,Valves,ValveTech,R1200,7,8,4
+WT-010,Clarifier Scraper Mechanism,Mechanical,MechSys,R25000,35,1,1
+WT-011,Sludge Return Pump,Pumps,FlowMax,R6500,10,2,1
+WT-012,pH Probe with Transmitter,Instrumentation,AnalyTech,R4500,14,2,1
+WT-013,Dissolved Oxygen Probe,Instrumentation,AnalyTech,R5200,14,2,1
+WT-014,Emergency Alarm System,Safety,SafetyFirst,R3200,7,3,2
+WT-015,Solar Panel 300W,Power,SolarTech,R2800,21,5,3

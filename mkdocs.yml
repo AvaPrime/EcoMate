@@ -1,0 +1,36 @@
+site_name: EcoMate Docs
+repo_url: https://github.com/YOURORG/ecomate-docs
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - toc.integrate
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+plugins:
+  - search
+  # - with-pdf:
+  #     output_path: site/pdf/ecomate-docs.pdf
+nav:
+  - Home: index.md
+  - Products:
+    - Wastewater:
+      - Overview: products/wastewater/overview.md
+      - Technical Spec: products/wastewater/technical-spec.md
+      - Installation Guide: products/wastewater/installation-guide.md
+      - Maintenance Schedule: products/wastewater/maintenance-schedule.md
+      - Compliance: products/wastewater/compliance.md
+  - Operations:
+    - Service Contracts: operations/service-contracts.md
+  - Suppliers:
+    - Supplier DB: suppliers/supplier-database.md
+    - RFQ Template: suppliers/rfq-template.md
+  - Marketing:
+    - Go-To-Market: marketing/gtm.md
+    - Sales Deck Notes: marketing/sales-deck-notes.md

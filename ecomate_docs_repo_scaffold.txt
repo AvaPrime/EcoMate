@@ -1,0 +1,360 @@
+# Repo: ecomate-docs
+
+A docs-as-code repository for EcoMate. Uses **MkDocs (Material)** with optional **PDF export**, **GitHub Pages** deploy, and room to auto-generate Google Docs/Slides via helper scripts.
+
+---
+
+## 📁 Directory Tree
+```
+ecomate-docs/
+├─ README.md
+├─ mkdocs.yml
+├─ requirements.txt
+├─ .gitignore
+├─ Makefile
+├─ docs/
+│  ├─ index.md
+│  ├─ products/
+│  │  └─ wastewater/
+│  │     ├─ overview.md
+│  │     ├─ technical-spec.md
+│  │     ├─ installation-guide.md
+│  │     ├─ maintenance-schedule.md
+│  │     └─ compliance.md
+│  ├─ operations/
+│  │  └─ service-contracts.md
+│  ├─ marketing/
+│  │  ├─ gtm.md
+│  │  └─ sales-deck-notes.md
+│  └─ suppliers/
+│     ├─ supplier-database.md
+│     └─ rfq-template.md
+├─ data/
+│  ├─ parts_list.csv
+│  ├─ maintenance_schedule.csv
+│  └─ suppliers.csv
+├─ scripts/
+│  ├─ export_docx.sh
+│  ├─ export_pdf.sh
+│  └─ google_sheets_sync_example.gs
+└─ .github/
+   └─ workflows/
+      ├─ deploy.yml
+      └─ build-pdf.yml
+```
+
+---
+
+## README.md
+```md
+# EcoMate — Docs as Code
+
+This repository holds EcoMate's product, ops, and GTM documentation in Markdown. Built with **MkDocs Material**, published to **GitHub Pages**, with optional PDF/Word exports for client packs.
+
+## Quickstart
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+mkdocs serve  # http://127.0.0.1:8000
+```
+
+## Deploy
+Push to `main`; GitHub Actions builds and deploys to Pages.
+
+## Exports
+- PDF: `make pdf`
+- DOCX (via pandoc): `make docx` (then upload to Google Drive)
+
+## Data → Google Sheets
+Keep tabular data in `data/*.csv`. Import into Google Sheets (File > Import) or use the Apps Script example in `scripts/google_sheets_sync_example.gs` to pull CSV from GitHub on a schedule.
+```
+```
+
+---
+
+## mkdocs.yml (Material + PDF)
+```yaml
+site_name: EcoMate Docs
+repo_url: https://github.com/YOURORG/ecomate-docs
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - toc.integrate
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+plugins:
+  - search
+  - with-pdf:
+      output_path: site/pdf/ecomate-docs.pdf
+nav:
+  - Home: index.md
+  - Products:
+    - Wastewater:
+      - Overview: products/wastewater/overview.md
+      - Technical Spec: products/wastewater/technical-spec.md
+      - Installation Guide: products/wastewater/installation-guide.md
+      - Maintenance Schedule: products/wastewater/maintenance-schedule.md
+      - Compliance: products/wastewater/compliance.md
+  - Operations:
+    - Service Contracts: operations/service-contracts.md
+  - Suppliers:
+    - Supplier DB: suppliers/supplier-database.md
+    - RFQ Template: suppliers/rfq-template.md
+  - Marketing:
+    - Go-To-Market: marketing/gtm.md
+    - Sales Deck Notes: marketing/sales-deck-notes.md
+```
+
+---
+
+## requirements.txt
+```txt
+mkdocs>=1.6
+mkdocs-material>=9.5
+mkdocs-with-pdf>=0.9
+pymdown-extensions>=10.9
+```
+
+---
+
+## .gitignore
+```gitignore
+.venv/
+site/
+__pycache__/
+*.pdf
+*.docx
+.DS_Store
+```
+
+---
+
+## Makefile
+```make
+PY=python
+PIP=$(PY) -m pip
+VENv=.venv
+
+init:
+	$(PY) -m venv .venv && . .venv/bin/activate && $(PIP) install -r requirements.txt
+
+serve:
+	mkdocs serve
+
+build:
+	mkdocs build --strict
+
+pdf:
+	mkdocs build
+	@echo "PDF at site/pdf/ecomate-docs.pdf"
+
+# Requires pandoc installed locally
+DOCX_OUT=exports
+DOCX_FILES= \
+	docs/products/wastewater/overview.md \
+	docs/products/wastewater/technical-spec.md \
+	docs/products/wastewater/installation-guide.md \
+	docs/products/wastewater/maintenance-schedule.md \
+	docs/products/wastewater/compliance.md
+
+docx:
+	mkdir -p $(DOCX_OUT)
+	for f in $(DOCX_FILES); do \
+	  base=$$(basename $$f .md); \
+	  pandoc $$f -o $(DOCX_OUT)/$$base.docx; \
+	done
+```
+
+---
+
+## .github/workflows/deploy.yml (GitHub Pages)
+```yaml
+name: Deploy MkDocs to GitHub Pages
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install -r requirements.txt
+      - run: mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+---
+
+## .github/workflows/build-pdf.yml (PDF artifact)
+```yaml
+name: Build PDF
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**/*.md'
+      - 'mkdocs.yml'
+permissions:
+  contents: read
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install -r requirements.txt
+      - run: mkdocs build
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecomate-docs-pdf
+          path: site/pdf/*.pdf
+```
+
+---
+
+## scripts/export_docx.sh (optional local Word exports via Pandoc)
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p exports
+for f in "$@"; do
+  base=$(basename "$f" .md)
+  pandoc "$f" -o "exports/${base}.docx"
+done
+```
+
+---
+
+## scripts/export_pdf.sh (uses DeckTape or wkhtmltopdf if desired)
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+mkdocs build
+# PDF already generated by mkdocs-with-pdf plugin into site/pdf
+```
+
+---
+
+## scripts/google_sheets_sync_example.gs (Apps Script to pull CSV)
+```javascript
+/**
+ * Create a Google Sheet, then Tools > Script editor, paste this, set GITHUB_RAW_URL, run `sync()`.
+ * This pulls CSV from GitHub and overwrites a sheet tab named `data`.
+ */
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/YOURORG/ecomate-docs/main/data/suppliers.csv';
+
+function sync() {
+  const resp = UrlFetchApp.fetch(GITHUB_RAW_URL);
+  const csv = Utilities.parseCsv(resp.getContentText());
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName('data') || ss.insertSheet('data');
+  sh.clearContents();
+  sh.getRange(1,1,csv.length,csv[0].length).setValues(csv);
+}
+```
+
+---
+
+## docs/index.md
+```md
+# EcoMate Documentation
+
+This site houses EcoMate's product specs, installation guides, operations playbooks, and GTM materials. Start with **Products → Wastewater**.
+```
+
+---
+
+## docs/products/wastewater/overview.md
+```md
+# Wastewater Treatment Systems — Overview
+
+**Range**: Above-ground domestic, below-ground domestic, estate/community, remote/off-grid.
+**Differentiators**: Consolidated components, dual-power (grid/solar), eco-sensitive engineering, compliance-first, maintenance-ready.
+```
+
+## docs/products/wastewater/technical-spec.md
+```md
+# Technical Specifications (Stub)
+
+> Engineering reference for design, fabrication, installation, and compliance. Replace 🔧 placeholders with project values.
+
+## Design Basis
+- Occupancy models, design flows, influent assumptions, effluent targets, power sources.
+
+## Process Options
+- CAP (baseline), MBBR (estates), MBR (premium), low-energy off-grid variant.
+
+## Sizing & M&E
+- Primary, aeration, clarification, polishing, sludge handling; pumps/valves/pipework; controls; remote monitoring.
+```
+
+## docs/products/wastewater/installation-guide.md
+```md
+# Installation Guide (Stub)
+
+## Site Prep
+Checklist: geotech, setbacks, utilities, pad/foundation.
+
+## Install Steps
+Unload → set tanks/skid → connect hydraulics → wire panel → leak/IO tests.
+
+## Commissioning
+Seeding, 72h monitored run, sampling, acceptance sign-off.
+```
+
+## docs/products/wastewater/maintenance-schedule.md
+```md
+# Maintenance Schedule (Stub)
+
+- Monthly: visual, screens, venting
+- Quarterly: blower/pump service
+- 6-monthly: sludge check
+- Annual: UV lamp, instrument cal
+```
+
+## docs/products/wastewater/compliance.md
+```md
+# Compliance (Stub)
+
+- SANS plumbing/building standards (cite per municipality)
+- Municipal by-laws: onsite treatment, reuse/discharge
+- Environmental setbacks for wetlands/watercourses
+- Electrical compliance & panel labeling
+```
+
+---
+
+## Mapping to Google Workspace
+- **Docs**: Use `make docx` (Pandoc) to generate `.docx`; upload to Google Drive (keeps formatting). For full automation, an Apps Script in a target Google Doc can fetch raw Markdown from GitHub and render—start with `google_sheets_sync_example.gs` logic and adapt to Docs API.
+- **Sheets**: Keep CSVs in `data/`. Import into Google Sheets (File → Import) or schedule Apps Script `sync()` to pull from GitHub on a timer.
+- **Slides**: Draft slide content as Markdown in `marketing/sales-deck-notes.md`. Generate **HTML/PDF** decks using **Marp** or **reveal.js** locally (optional), then import PDF into Google Slides or rebuild slides in Slides using the notes as source.
+``
