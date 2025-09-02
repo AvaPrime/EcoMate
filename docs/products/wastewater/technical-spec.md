@@ -1,12 +1,137 @@
-# Technical Specifications (Stub)
+# Wastewater Treatment Systems — Technical Specifications (EcoMate)
 
-> Engineering reference for design, fabrication, installation, and compliance. Replace 🔧 placeholders with project values.
+> **Purpose:** Engineering basis for design, fabrication, installation, and compliance of EcoMate domestic, estate, and off‑grid wastewater systems. Values shown are design norms for Southern African residential contexts—verify against project data and authority limits.
 
-## Design Basis
-- Occupancy models, design flows, influent assumptions, effluent targets, power sources.
+---
 
-## Process Options
-- CAP (baseline), MBBR (estates), MBR (premium), low-energy off-grid variant.
+## 1) Design Basis
+- **Applications:** Combined blackwater + greywater (default). Greywater‑only variant available.
+- **Occupancy Models (PE = person equivalent):**
+  - Single dwelling: 4–12 PE (typical 6–8 PE)
+  - Cluster/Estate module: 20–400 PE via modular units
+  - Remote/off‑grid: 4–60 PE
+- **Design Flows (typical starting points):**
+  - Average Daily Flow (ADF): **160 L/PE·day** (range 120–200) → size on project PE
+  - Peak factor: **2.5–3.5** (daily), **4–6** (hourly) for small systems
+- **Influent Assumptions (domestic):** BOD₅ 250–400 mg/L; COD 500–800 mg/L; TSS 200–350 mg/L; TN 40–70 mg/L; TP 6–12 mg/L; FOG 50–150 mg/L; pH 6.5–8.5; Temp 10–30 °C.
+- **Effluent Targets (non‑potable reuse classes, confirm locally):** BOD₅ ≤ 20 mg/L; TSS ≤ 20 mg/L; Turbidity ≤ 5 NTU; E. coli ≤ 100–1,000 CFU/100 mL; residual disinfectant per method.
+- **Power:** 230 V AC; solar‑battery hybrid option sized per §4; optional generator input.
 
-## Sizing & M&E
-- Primary, aeration, clarification, polishing, sludge handling; pumps/valves/pipework; controls; remote monitoring.
+---
+
+## 2) Process Selections
+- **Domestic baseline (CAP):** Primary → Aeration (fine‑bubble) → Clarification → Disinfection (UV/Cl)
+- **Estate (MBBR):** Primary/EQ → MBBR with carriers → Clarifier → Filtration (optional) → UV
+- **Premium (MBR):** Primary (optional) → Aeration with immersed membranes → UV (very low TSS/E. coli)
+- **Off‑grid:** Primary → Low‑energy biofilter or intermittent aeration → Polishing wetland/filters → Solar‑UV
+
+> Select based on load variability, land take, OPEX, and reuse class. MBR yields the highest quality at higher CAPEX/OPEX.
+
+---
+
+## 3) Sizing Guidelines (Quick Rules of Thumb)
+### 3.1 Primary Settling / EQ
+- **Hydraulic Retention (HRT):** 6–12 h at ADF (domestic), 4–8 h (estate). Choose higher end for off‑grid/variable loads.
+- **Volume:** Vₚ = ADF × HRT → e.g., 1.5 kL/d × 8 h ≈ **0.5 m³** (plus freeboard).
+- **Features:** Inlet/scum baffles; sludge draw‑off; odour venting; access covers (lockable).
+
+### 3.2 Aeration (Conventional Activated Sludge or MBBR)
+- **HRT:** 8–16 h (domestic), 6–10 h (estate MBBR effective mass makes up), temp‑dependent.
+- **Mixing/Air:** Fine‑bubble diffusers; design **1.2–1.8 kg O₂/kg BOD removed**; 
+  blower power indicative **0.45–0.8 kW per kL/d** for domestic CAP; provide N+1 for estate.
+- **MBBR Media:** Fill fraction **40–60%**; specific surface area (SSA) **> 500 m²/m³**; screen to prevent media carryover.
+
+### 3.3 Clarification / Solids Separation
+- **Surface Overflow Rate (SOR):** 0.5–1.0 m³/m²·h (small plants).
+- **Sludge Return (RAS):** 50–100% of influent (activated sludge); **WAS** 0.5–1.5% of volume/day depending on SRT.
+
+### 3.4 Tertiary & Disinfection
+- **Filtration:** When required for low turbidity or sensitive reuse; cartridge/sand/UF based on reuse spec.
+- **UV:** Design dose **≥ 40 mJ/cm²** (unrestricted irrigation often 80–100 mJ/cm² depending on turbidity).
+- **Chlorination:** Maintain free residual per by‑law and CT calculation; include dechlor option if discharging to sensitive environments.
+
+### 3.5 Sludge Handling
+- **SRT:** 15–25 d (domestic) for stable nitrification at moderate temps; adjust seasonally.
+- **Storage:** 30–90 days onsite capacity or third‑party pump‑out schedule.
+
+---
+
+## 4) Mechanical & Electrical (M&E)
+- **Pumps:** Submersible sewage/effluent pumps sized to duty point; provide isolation valves and non‑return valves; estate units with duty/standby.
+- **Valves/Pipework:** uPVC/HDPE/SS with pressure class to duty; electrofusion for HDPE; unions for service.
+- **Instrumentation:** Level (ultrasonic/pressure), DO probe (optional for CAP), flowmeter (estate), turbidity/residual (if required).
+- **Control Panel:** IP65; MCBs/overloads; soft‑starter or VFD as needed; local/remote; alarm beacons; E‑stop.
+- **Automation:** PLC/smart relay timers for aeration; alarm telemetry via GSM/LTE; cloud dashboard optional.
+- **Power & Solar:** Provide AC load schedule; for solar option, budget **~1–2 kWh per kL treated** (CAP baseline) → size PV (kWp) and battery (kWh) for site irradiance and autonomy.
+
+---
+
+## 5) Materials & Fabrication
+- **Tanks:** HDPE/FRP or concrete; UV‑stabilised; wall thickness per diameter/depth; lifting lugs; lockable access.
+- **Frames/Skids:** Hot‑dip galvanised or SS304/316; corrosion protection to ISO spec; RAL colour per client.
+- **Enclosures:** Weatherproof acoustic housing for blowers/pumps; **≤ 55 dB(A) at 1 m** design.
+
+---
+
+## 6) Civil / Site Requirements
+- **Footprints (typical):**
+  - Above‑ground skid (1.5 kL/d): ~1.8 m × 1.2 m × 1.6 m (H)
+  - Below‑ground tank (2.0 kL/d): excavation envelope ~3.5 m × 1.8 m × 2.2 m (D)
+- **Foundations:** Level reinforced pad for skids; bedding/backfill to geotech; anchor points where wind/float risk.
+- **Setbacks (indicative; confirm locally):** Buildings 3–5 m; boundaries 2–3 m; watercourses/wetlands per authority (often ≥ 32 m unless otherwise approved).
+- **Access:** Vehicle access for desludging; 1 m clear service envelope; safe lifting access.
+
+---
+
+## 7) Performance & Guarantees (Project‑Specific)
+- Effluent quality to meet §1 targets under design conditions after biological stabilisation (typically 30–60 days).
+- Availability **≥ 98%** with standard maintenance and recommended spares.
+- Acoustic/odour performance per site plan.
+
+---
+
+## 8) QA/QC & Testing
+- **FAT:** Pressure/leak tests; blower curves; panel I/O simulation.
+- **SAT/Commissioning:** Inlet/outlet leak test; pump/valve function; aeration rate check; 72‑h monitored run; baseline grab/composite sampling.
+- **Handover Pack:** As‑builts; PFD, P&ID; electrical SLD & panel layouts; O&M; spares; training record; initial lab results.
+
+---
+
+## 9) HSE
+- Confined space controls for below‑ground works; LOTO for electrical; MSDS for chemicals; licensed sludge disposal.
+
+---
+
+## 10) Compliance (Guide)
+- Plumbing/building separation of potable vs non‑potable; backflow prevention; purple pipe labelling for reuse lines.
+- Municipal approvals for on‑site treatment and discharge/reuse; sampling points; reporting cadence.
+- Electrical compliance (earthing, RCDs, labelling) and environmental setbacks.
+
+---
+
+## 11) Bill of Materials (Template — per project)
+| Subsystem | Item | Spec/Size | Qty | Material | Notes |
+|---|---|---|---:|---|---|
+| Primary | Tank with baffles | 2.0 m³ | 1 | HDPE/FRP | Lockable access |
+| Aeration | Blower | 0.55 kW | 1 (N+1 opt) | — | Fine‑bubble diffusers |
+| Aeration | Diffusers | Ø 215 mm | 10 | EPDM | With air header |
+| Clarifier | Hopper tank | 1.0 m³ | 1 | FRP | Sludge draw‑off |
+| Disinfection | UV reactor | 80–100 mJ/cm² | 1 | SS316 | 230 V |
+| Controls | Panel | IP65 | 1 | — | PLC/smart relay |
+| Instrument | Level sensor | Ultrasonic | 1 | — | High‑level alarm |
+
+---
+
+## 12) Spares & Maintenance
+- Diffuser membranes (set), blower service kit, pump seal kit, UV lamp & quartz, cartridge filters, panel fuses/relays.
+- **Intervals:** Monthly visual; quarterly service; 6‑monthly sludge review; annual UV/instrument calibration.
+
+---
+
+## 13) Commissioning Checklist (Abbrev.)
+- Civil sign‑off; tanks cleaned/filled; electrical tests passed; pump/blower direction and flow verified; seeding plan executed; 72‑h monitored operation; baseline sampling; client training/sign‑off.
+
+---
+
+### Revision Log
+- **Rev A (2025‑09‑02):** Initial engineering baseline populated for domestic/estate/off‑grid variants.

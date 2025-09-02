@@ -1,16 +1,26 @@
-Part Number,Description,Category,Supplier,Unit Cost,Lead Time (Days),Stock Level,Reorder Point
-WT-001,Primary Settlement Tank 5000L,Tanks,AquaTech SA,R45000,21,2,1
-WT-002,Aeration Blower 2.2kW,Blowers,PumpCorp,R18500,14,3,2
-WT-003,Submersible Effluent Pump,Pumps,FlowMax,R8500,10,5,3
-WT-004,UV Disinfection Unit 25W,Disinfection,UVTech,R12000,28,2,1
-WT-005,Control Panel IP65,Electrical,AutoControl,R15000,21,1,1
-WT-006,Level Sensor Ultrasonic,Sensors,SensorTech,R3500,7,4,2
-WT-007,Air Diffuser Membrane,Aeration,BubbleTech,R850,14,10,5
-WT-008,PVC Pipe 110mm x 6m,Pipework,PipeCorp,R450,3,20,10
-WT-009,Gate Valve 100mm,Valves,ValveTech,R1200,7,8,4
-WT-010,Clarifier Scraper Mechanism,Mechanical,MechSys,R25000,35,1,1
-WT-011,Sludge Return Pump,Pumps,FlowMax,R6500,10,2,1
-WT-012,pH Probe with Transmitter,Instrumentation,AnalyTech,R4500,14,2,1
-WT-013,Dissolved Oxygen Probe,Instrumentation,AnalyTech,R5200,14,2,1
-WT-014,Emergency Alarm System,Safety,SafetyFirst,R3200,7,3,2
-WT-015,Solar Panel 300W,Power,SolarTech,R2800,21,5,3
+Part Number,Description,Category,Supplier,Unit Cost,Lead Time (Days),Stock Level,Reorder Point,Specifications
+WT-001,Primary Tank with Baffles 2.0m³,Primary,AquaTech SA,R45000,21,2,1,HDPE/FRP with lockable access
+WT-002,Aeration Blower 0.55kW,Aeration,PumpCorp,R12500,14,3,2,Fine-bubble diffusers included
+WT-003,Submersible Effluent Pump,Pumps,FlowMax,R8500,10,5,3,With isolation and non-return valves
+WT-004,UV Reactor 80-100 mJ/cm²,Disinfection,UVTech,R15000,28,2,1,SS316 construction
+WT-005,Control Panel IP65 PLC,Electrical,AutoControl,R18000,21,1,1,With smart relay and alarms
+WT-006,Level Sensor Ultrasonic,Instrumentation,SensorTech,R3500,7,4,2,High-level alarm capability
+WT-007,Fine-Bubble Diffuser Ø215mm,Aeration,BubbleTech,R1200,14,10,5,EPDM membrane with air header
+WT-008,HDPE Pipe 110mm x 6m,Pipework,PipeCorp,R650,3,20,10,Electrofusion fittings
+WT-009,Gate Valve 100mm,Valves,ValveTech,R1200,7,8,4,uPVC/HDPE compatible
+WT-010,Clarifier Hopper Tank 1.0m³,Clarification,MechSys,R28000,35,1,1,FRP with sludge draw-off
+WT-011,Sludge Return Pump,Pumps,FlowMax,R6500,10,2,1,Variable speed capability
+WT-012,pH Probe with Transmitter,Instrumentation,AnalyTech,R4500,14,2,1,Range 6.5-8.5 pH
+WT-013,Dissolved Oxygen Probe,Instrumentation,AnalyTech,R5200,14,2,1,2-4 mg/L operating range
+WT-014,Emergency Stop System,Safety,SafetyFirst,R3200,7,3,2,Accessible E-stop buttons
+WT-015,Solar Panel 300W,Power,SolarTech,R2800,21,5,3,For hybrid power systems
+WT-016,MBBR Media Carriers,Aeration,BioMedia,R850,21,50,25,40-60% fill fraction >500 m²/m³ SSA
+WT-017,UV Lamp Replacement,Disinfection,UVTech,R1800,14,5,3,Compatible with WT-004 reactor
+WT-018,Quartz Sleeve,Disinfection,UVTech,R650,14,3,2,UV reactor component
+WT-019,Blower Service Kit,Maintenance,PumpCorp,R2200,10,3,2,Filters belts bearings
+WT-020,Pump Seal Kit,Maintenance,FlowMax,R850,7,5,3,For submersible pumps
+WT-021,Cartridge Filters,Filtration,FilterTech,R320,7,10,5,Tertiary treatment option
+WT-022,Panel Fuses/Relays Kit,Electrical,AutoControl,R450,3,5,3,Control panel spares
+WT-023,Purple Pipe 50mm x 6m,Pipework,PipeCorp,R380,3,15,8,For reuse water distribution
+WT-024,Turbidity Meter,Instrumentation,AnalyTech,R6800,21,1,1,≤5 NTU measurement range
+WT-025,Flowmeter Electromagnetic,Instrumentation,FlowTech,R8500,28,2,1,For estate applications

@@ -2,11 +2,36 @@ site_name: EcoMate Docs
 repo_url: https://github.com/YOURORG/ecomate-docs
 theme:
   name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.sections
     - content.code.copy
     - toc.integrate
+    - palette.toggle
+  custom_dir: overrides
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra_javascript:
+  - assets/javascripts/theme-toggle.js
+
 markdown_extensions:
   - admonition
   - toc:
@@ -25,8 +50,10 @@ nav:
       - Technical Spec: products/wastewater/technical-spec.md
       - Installation Guide: products/wastewater/installation-guide.md
       - Maintenance Schedule: products/wastewater/maintenance-schedule.md
+      - Troubleshooting: products/wastewater/troubleshooting.md
       - Compliance: products/wastewater/compliance.md
   - Operations:
+    - Standard Operating Procedures: operations/standard-operating-procedures.md
     - Service Contracts: operations/service-contracts.md
   - Suppliers:
     - Supplier DB: suppliers/supplier-database.md

@@ -25,17 +25,35 @@
 - [ ] Include training
 
 ### Specifications
-- **Influent characteristics**: [BOD, COD, TSS, flow rates]
-- **Effluent requirements**: [Discharge/reuse standards]
+- **Influent characteristics**: 
+  - BOD₅: 250-400 mg/L
+  - COD: 500-800 mg/L
+  - TSS: 200-350 mg/L
+  - TN: 40-70 mg/L, TP: 6-12 mg/L
+  - Design flow: 160 L/PE·day (range 120-200)
+  - Peak factors: 2.5-3.5 (daily), 4-6 (hourly)
+- **Effluent requirements**: 
+  - BOD₅ ≤20 mg/L, TSS ≤20 mg/L
+  - Turbidity ≤5 NTU
+  - E. coli ≤100-1,000 CFU/100 mL
+  - Residual disinfectant per method
 - **Site conditions**: [Soil type, water table, access]
-- **Power supply**: [Grid/solar/hybrid requirements]
-- **Monitoring**: [Local/remote monitoring needs]
+- **Power supply**: 230V AC standard, solar-battery hybrid option
+- **Process selection**: CAP/MBBR/MBR/Off-grid based on application
+- **Materials**: HDPE/FRP tanks, hot-dip galvanized frames, IP65 controls
+- **Performance guarantees**: ≥98% availability, acoustic ≤55 dB(A) at 1m
+- **Monitoring**: Level sensors, DO probes, flowmeters, telemetry options
 
 ### Compliance Requirements
-- Municipal approvals required
-- Environmental impact considerations
-- SANS standards compliance
-- Warranty and service requirements
+- **Municipal approvals**: On-site treatment and discharge/reuse permits
+- **Environmental setbacks**: Buildings 3-5m, boundaries 2-3m, watercourses ≥32m
+- **Plumbing compliance**: Backflow prevention, purple pipe labelling for reuse
+- **Electrical compliance**: Earthing, RCDs, labelling per regulations
+- **SANS standards compliance**: Full certification required
+- **QA/QC requirements**: FAT, SAT, commissioning checklist
+- **HSE compliance**: Confined space controls, LOTO, MSDS for chemicals
+- **Warranty**: Performance guarantees, availability targets
+- **Service requirements**: Maintenance intervals, spare parts, training
 
 ## Commercial Terms
 
