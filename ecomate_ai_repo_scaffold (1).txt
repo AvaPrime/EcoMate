@@ -1,0 +1,455 @@
+# Repo: ecomate-ai
+
+A minimal-but-powerful **agentic backend** for EcoMate that plugs into your docs-as-code flow. Includes:
+
+- **Temporal** workflows (Python SDK) for durable runs
+- **Model Router** (local Ollama + cloud providers) stub
+- **FastAPI** trigger service
+- **Postgres + pgvector** for embeddings & provenance
+- **MinIO** for raw artifacts (PDFs, HTML, JSON)
+- **NATS** (optional) for pub/sub fanout
+- **GitHub PR util** to open diffs against `ecomate-docs`
+
+> Everything below is ready to copy into a new repo. Replace `YOUR_GH_ORG` and secrets as noted.
+
+---
+
+## 📁 Directory Tree
+```
+ecomate-ai/
+├─ README.md
+├─ docker-compose.yml
+├─ .env.example
+├─ Makefile
+├─ requirements.txt
+├─ storage/
+│  └─ init.sql
+├─ services/
+│  ├─ orchestrator/
+│  │  ├─ workflows.py
+│  │  ├─ activities.py
+│  │  ├─ worker.py
+│  │  ├─ model_router.py
+│  │  └─ config.yaml
+│  ├─ api/
+│  │  └─ main.py
+│  └─ utils/
+│     ├─ fetch.py
+│     ├─ parsers.py
+│     └─ github_pr.py
+└─ .github/
+   └─ workflows/
+      └─ ci.yml
+```
+
+---
+
+## README.md
+```md
+# ecomate-ai
+
+Agent services for EcoMate: research, supplier sync, price monitor, spec drafting, and compliance checks.
+
+## Quickstart
+```bash
+# 1) clone & env
+cp .env.example .env
+# fill values in .env (OLLAMA_URL, GH_TOKEN, MINIO creds, etc.)
+
+# 2) bring up infra
+docker compose up -d postgres minio temporal nats
+
+# 3) install local deps for worker & api
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# 4) start a Temporal worker
+python services/orchestrator/worker.py
+
+# 5) start the API (triggers workflows)
+uvicorn services.api.main:app --reload --port 8080
+```
+
+## Temporal Web & MinIO
+- Temporal Web UI: http://localhost:8088
+- MinIO Console: http://localhost:9001 (user/pass from `.env`)
+
+## Trigger a sample research run
+```bash
+curl -X POST 'http://localhost:8080/run/research' \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"domestic MBBR package South Africa","limit":5}'
+```
+
+## PR to docs repo
+Set `GH_TOKEN` (PAT with repo scope) and `DOCS_REPO=YOUR_GH_ORG/ecomate-docs`. The demo activity writes `data/suppliers.csv` and opens a PR.
+```
+```
+
+---
+
+## docker-compose.yml
+```yaml
+version: "3.8"
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+      POSTGRES_DB: ${PGDATABASE:-ecomate}
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./storage/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports: ["9000:9000","9001:9001"]
+    volumes:
+      - minio:/data
+
+  temporal:
+    image: temporalio/auto-setup:1.24.0
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PWD: ${PGPASSWORD:-postgres}
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/temporal_docker.yaml
+    ports: ["7233:7233","8088:8088"]
+
+  nats:
+    image: nats:2.10
+    command: ["-js"]
+    ports: ["4222:4222","8222:8222"]
+
+volumes:
+  pgdata: {}
+  minio: {}
+```
+
+---
+
+## .env.example
+```env
+# Postgres
+PGUSER=postgres
+PGPASSWORD=postgres
+PGDATABASE=ecomate
+
+# MinIO
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+MINIO_BUCKET=ecomate-artifacts
+
+# Models
+OLLAMA_URL=http://localhost:11434
+VERTEX_PROJECT=
+VERTEX_LOCATION=us-central1
+VERTEX_GEMINI_MODEL=gemini-1.5-pro
+
+# GitHub
+DOCS_REPO=YOUR_GH_ORG/ecomate-docs
+GH_TOKEN=
+```
+
+---
+
+## requirements.txt
+```txt
+fastapi==0.114.0
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+selectolax==0.3.20
+beautifulsoup4==4.12.3
+pydantic==2.8.2
+python-dotenv==1.0.1
+boto3==1.34.152
+psycopg[binary]==3.2.1
+pgvector==0.3.3
+temporalio==1.7.0
+PyYAML==6.0.2
+```
+
+---
+
+## storage/init.sql
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+-- Example embeddings table
+CREATE TABLE IF NOT EXISTS embeddings (
+  id BIGSERIAL PRIMARY KEY,
+  doc_id TEXT,
+  chunk_no INT,
+  embedding vector(1536),
+  meta JSONB,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+---
+
+## services/orchestrator/config.yaml
+```yaml
+router:
+  draft: ollama:qwen2.5:14b-instruct
+  reason: vertex:gemini-1.5-pro
+  classify: openai:gpt-4.1-mini  # optional; leave unused if not available
+```
+
+---
+
+## services/orchestrator/model_router.py
+```python
+import os, json, httpx, base64
+from typing import Literal
+
+Task = Literal["draft","reason","classify"]
+
+class ModelRouter:
+    def __init__(self, cfg: dict):
+        self.cfg = cfg
+        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+
+    async def run(self, task: Task, prompt: str):
+        target = self.cfg["router"].get(task, "ollama:qwen2.5:14b-instruct")
+        provider, model = target.split(":", 1)
+        if provider == "ollama":
+            return await self._ollama(model, prompt)
+        if provider == "vertex":
+            return await self._vertex(model, prompt)
+        raise NotImplementedError(f"Provider {provider} not configured")
+
+    async def _ollama(self, model: str, prompt: str):
+        async with httpx.AsyncClient(timeout=60) as c:
+            r = await c.post(f"{self.ollama_url}/api/generate", json={"model": model, "prompt": prompt})
+            r.raise_for_status()
+            return r.json().get("response", "")
+
+    async def _vertex(self, model: str, prompt: str):
+        # Placeholder: call a gateway you control, or use google-genai client if running on GCP.
+        # For local dev, mock the response to keep flows testable.
+        return f"[vertex:{model}] " + prompt[:200]
+```
+
+---
+
+## services/utils/fetch.py
+```python
+import httpx, time
+from selectolax.parser import HTMLParser
+
+async def fetch_title(url: str) -> dict:
+    async with httpx.AsyncClient(timeout=30, headers={"User-Agent":"EcoMateBot/1.0"}) as c:
+        r = await c.get(url)
+    html = HTMLParser(r.text)
+    title = html.css_first("title").text() if html.css_first("title") else url
+    return {"url": url, "title": title, "ts": int(time.time())}
+```
+
+---
+
+## services/utils/parsers.py
+```python
+from bs4 import BeautifulSoup
+
+def extract_table(html: str):
+    soup = BeautifulSoup(html, 'html.parser')
+    table = soup.find('table')
+    if not table:
+        return []
+    rows = []
+    for tr in table.find_all('tr'):
+        cells = [td.get_text(strip=True) for td in tr.find_all(['th','td'])]
+        if cells:
+            rows.append(cells)
+    return rows
+```
+
+---
+
+## services/utils/github_pr.py
+```python
+import os, tempfile, subprocess, shutil, json
+from pathlib import Path
+
+REPO = os.getenv("DOCS_REPO", "YOUR_GH_ORG/ecomate-docs")
+GH = shutil.which("gh")
+
+def open_pr(branch: str, commit_msg: str, changes: dict):
+    """changes = { 'path/relative.txt': 'new content' }"""
+    if not GH:
+        raise RuntimeError("GitHub CLI (gh) not found. Install and `gh auth login` or set GH_TOKEN env.")
+    with tempfile.TemporaryDirectory() as td:
+        subprocess.run([GH, "repo", "clone", REPO, td], check=True)
+        repo = Path(td)
+        subprocess.run(["git", "checkout", "-b", branch], cwd=repo, check=True)
+        for rel, content in changes.items():
+            p = repo / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(content, encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-m", commit_msg], cwd=repo, check=True)
+        subprocess.run(["git", "push", "--set-upstream", "origin", branch], cwd=repo, check=True)
+        subprocess.run([GH, "pr", "create", "--fill"], cwd=repo, check=True)
+```
+
+---
+
+## services/orchestrator/activities.py
+```python
+from services.utils.fetch import fetch_title
+from services.utils.github_pr import open_pr
+
+async def activity_fetch_and_log(urls: list[str]) -> list[dict]:
+    results = []
+    for u in urls:
+        results.append(await fetch_title(u))
+    return results
+
+async def activity_open_docs_pr(findings: list[dict]):
+    lines = ["url,title,ts"] + [f"{r['url']},{r['title'].replace(',', ' ')},{r['ts']}" for r in findings]
+    csv = "\n".join(lines) + "\n"
+    branch = "bot/research-initial"
+    open_pr(branch, "Research: seed suppliers.csv", {"data/suppliers.csv": csv})
+    return {"branch": branch, "rows": len(findings)}
+```
+
+---
+
+## services/orchestrator/workflows.py
+```python
+from temporalio import workflow
+from temporalio.contrib.logger import wf_logger
+from services.orchestrator.model_router import ModelRouter
+import yaml, os
+
+with open(os.path.join(os.path.dirname(__file__), 'config.yaml'), 'r') as f:
+    CFG = yaml.safe_load(f)
+
+@workflow.defn
+class ResearchWorkflow:
+    @workflow.run
+    async def run(self, query: str, urls: list[str]):
+        wf_logger.info(f"Research start: {query} (urls={len(urls)})")
+        router = ModelRouter(CFG)
+        # Use router for a quick classification/draft (demo)
+        intro = await workflow.execute_activity("activity_llm_intro", query, start_to_close_timeout=30)
+        findings = await workflow.execute_activity("activity_fetch_and_log", urls, start_to_close_timeout=300)
+        result = await workflow.execute_activity("activity_open_docs_pr", findings, start_to_close_timeout=120)
+        return {"message": intro, **result}
+```
+
+---
+
+## services/orchestrator/worker.py
+```python
+import asyncio, os
+from temporalio.worker import Worker
+from temporalio.client import Client
+from services.orchestrator.workflows import ResearchWorkflow
+from services.orchestrator.model_router import ModelRouter
+from services.orchestrator import activities as acts
+from dotenv import load_dotenv
+import yaml
+
+load_dotenv()
+
+async def activity_llm_intro(query: str) -> str:
+    cfg = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml')))
+    router = ModelRouter(cfg)
+    return await router.run("draft", f"Summarize research goals for: {query}")
+
+async def main():
+    client = await Client.connect("localhost:7233")
+    worker = Worker(
+        client,
+        task_queue="ecomate-ai",
+        workflows=[ResearchWorkflow],
+        activities={
+            "activity_llm_intro": activity_llm_intro,
+            "activity_fetch_and_log": acts.activity_fetch_and_log,
+            "activity_open_docs_pr": acts.activity_open_docs_pr,
+        },
+    )
+    print("Worker started on task-queue ecomate-ai")
+    await worker.run()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+---
+
+## services/api/main.py
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+from temporalio.client import Client
+
+app = FastAPI(title="EcoMate AI API")
+
+class ResearchReq(BaseModel):
+    query: str
+    limit: int = 5
+
+@app.post("/run/research")
+async def run_research(req: ResearchReq):
+    urls = [
+        "https://www.example.com/",
+        "https://www.google.com/",
+        "https://en.wikipedia.org/wiki/Moving_bed_biofilm_reactor",
+    ][: req.limit]
+    client = await Client.connect("localhost:7233")
+    handle = await client.start_workflow(
+        "services.orchestrator.workflows.ResearchWorkflow.run",
+        req.query,
+        urls,
+        id=f"research-{req.query[:12]}",
+        task_queue="ecomate-ai",
+    )
+    res = await handle.result()
+    return res
+```
+
+---
+
+## Makefile
+```make
+up:
+	docker compose up -d postgres minio temporal nats
+
+worker:
+	python services/orchestrator/worker.py
+
+api:
+	uvicorn services.api.main:app --reload --port 8080
+
+kill:
+	docker compose down -v
+```
+
+---
+
+## .github/workflows/ci.yml
+```yaml
+name: CI
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -r requirements.txt
+      - run: python -m compileall .

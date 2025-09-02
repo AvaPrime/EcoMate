@@ -1,0 +1,4 @@
+sku,url,selector,currency,target_price
+UV-REACTOR-01,https://vendor.example.com/uv-reactor-01,.price,USD,750
+BLOWER-055,https://shop.example.co.za/products/blower-055,.product-price,ZAR,
+PUMP-1HP,https://example-pumps.com/pump-1hp,meta[itemprop=price],USD,

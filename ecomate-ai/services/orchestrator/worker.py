@@ -2,8 +2,10 @@ import asyncio, os
 from temporalio.worker import Worker
 from temporalio.client import Client
 from services.orchestrator.workflows import ResearchWorkflow
+from services.orchestrator.price_workflows import PriceMonitorWorkflow, ScheduledPriceMonitorWorkflow
 from services.orchestrator.model_router import ModelRouter
 from services.orchestrator import activities as acts
+from services.orchestrator import activities_price as price_acts
 from dotenv import load_dotenv
 import yaml
 
@@ -19,11 +21,14 @@ async def main():
     worker = Worker(
         client,
         task_queue="ecomate-ai",
-        workflows=[ResearchWorkflow],
+        workflows=[ResearchWorkflow, PriceMonitorWorkflow, ScheduledPriceMonitorWorkflow],
         activities={
             "activity_llm_intro": activity_llm_intro,
             "activity_fetch_and_log": acts.activity_fetch_and_log,
             "activity_open_docs_pr": acts.activity_open_docs_pr,
+            "activity_fetch_prices": price_acts.activity_fetch_prices,
+            "activity_generate_price_report": price_acts.activity_generate_price_report,
+            "activity_open_price_pr": price_acts.activity_open_price_pr,
         },
     )
     print("Worker started on task-queue ecomate-ai")
