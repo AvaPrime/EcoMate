@@ -1,0 +1,332 @@
+# Quality Gates Configuration for EcoMate AI
+# This file defines the quality standards and thresholds for the project
+
+project:
+  name: "EcoMate AI"
+  version: "1.0.0"
+  description: "Quality gates for automated testing and code quality"
+
+# Coverage Requirements
+coverage:
+  # Overall project coverage requirements
+  project:
+    minimum: 85%
+    target: 90%
+    # Fail build if coverage drops below minimum
+    fail_below_minimum: true
+    # Allow coverage to drop by this percentage from previous build
+    allowed_drop: 2%
+  
+  # New code coverage requirements (for PRs)
+  patch:
+    minimum: 90%
+    target: 95%
+    fail_below_minimum: true
+    allowed_drop: 1%
+  
+  # Component-specific coverage requirements
+  components:
+    parsers:
+      minimum: 95%
+      target: 98%
+      paths:
+        - "src/parsers/"
+    
+    api:
+      minimum: 90%
+      target: 95%
+      paths:
+        - "src/api/"
+    
+    workflows:
+      minimum: 85%
+      target: 90%
+      paths:
+        - "src/workflows/"
+    
+    database:
+      minimum: 90%
+      target: 95%
+      paths:
+        - "src/database/"
+    
+    utils:
+      minimum: 95%
+      target: 98%
+      paths:
+        - "src/utils/"
+
+# Test Requirements
+tests:
+  # Minimum number of tests required
+  minimum_tests:
+    unit: 100
+    integration: 20
+    e2e: 10
+  
+  # Test execution requirements
+  execution:
+    # Maximum allowed test failures
+    max_failures: 0
+    # Maximum allowed flaky tests
+    max_flaky: 2
+    # Maximum test execution time (minutes)
+    max_duration: 30
+    # Minimum test success rate
+    min_success_rate: 99%
+  
+  # Test categories and their requirements
+  categories:
+    unit:
+      required: true
+      min_coverage: 90%
+      max_duration: 300  # seconds
+    
+    integration:
+      required: true
+      min_coverage: 85%
+      max_duration: 600  # seconds
+    
+    e2e:
+      required: true
+      min_coverage: 70%
+      max_duration: 1800  # seconds
+    
+    performance:
+      required: false
+      max_duration: 900  # seconds
+
+# Code Quality Requirements
+code_quality:
+  # Static analysis requirements
+  static_analysis:
+    # Linting requirements
+    linting:
+      flake8:
+        max_violations: 0
+        ignore_codes: ["E203", "W503"]
+      
+      black:
+        required: true
+        check_only: true
+      
+      isort:
+        required: true
+        check_only: true
+    
+    # Type checking requirements
+    type_checking:
+      mypy:
+        required: true
+        strict_mode: true
+        max_errors: 0
+    
+    # Security analysis
+    security:
+      bandit:
+        required: true
+        max_high_severity: 0
+        max_medium_severity: 2
+        max_low_severity: 5
+      
+      safety:
+        required: true
+        max_vulnerabilities: 0
+        ignore_ids: []  # List of vulnerability IDs to ignore
+  
+  # Code complexity requirements
+  complexity:
+    # Cyclomatic complexity
+    max_cyclomatic: 10
+    # Cognitive complexity
+    max_cognitive: 15
+    # Maximum function length
+    max_function_lines: 50
+    # Maximum class length
+    max_class_lines: 200
+    # Maximum file length
+    max_file_lines: 500
+  
+  # Documentation requirements
+  documentation:
+    # Docstring coverage
+    min_docstring_coverage: 80%
+    # Required docstring elements
+    required_elements:
+      - "description"
+      - "parameters"
+      - "returns"
+      - "raises"
+
+# Performance Requirements
+performance:
+  # API performance requirements
+  api:
+    # Maximum response time (milliseconds)
+    max_response_time: 1000
+    # Minimum requests per second
+    min_rps: 100
+    # Maximum error rate
+    max_error_rate: 1%
+  
+  # Database performance requirements
+  database:
+    # Maximum query execution time (milliseconds)
+    max_query_time: 500
+    # Maximum connection pool usage
+    max_pool_usage: 80%
+  
+  # Memory usage requirements
+  memory:
+    # Maximum memory usage (MB)
+    max_usage: 512
+    # Maximum memory growth rate
+    max_growth_rate: 10%
+  
+  # Load testing requirements
+  load_testing:
+    # Concurrent users
+    concurrent_users: 50
+    # Test duration (minutes)
+    duration: 10
+    # Success criteria
+    success_criteria:
+      response_time_95th: 2000  # milliseconds
+      error_rate: 1%
+      throughput: 50  # requests per second
+
+# Security Requirements
+security:
+  # Dependency scanning
+  dependencies:
+    # Maximum allowed vulnerability severity
+    max_severity: "medium"
+    # Fail build on vulnerabilities
+    fail_on_vulnerabilities: true
+    # Allowed vulnerability count by severity
+    allowed_vulnerabilities:
+      critical: 0
+      high: 0
+      medium: 2
+      low: 5
+  
+  # Code scanning
+  code_scanning:
+    # SAST (Static Application Security Testing)
+    sast:
+      required: true
+      max_critical: 0
+      max_high: 0
+      max_medium: 2
+    
+    # Secret scanning
+    secrets:
+      required: true
+      max_secrets: 0
+      exclude_patterns:
+        - "test_*"
+        - "*_test.py"
+        - "fixtures/*"
+
+# Build Requirements
+build:
+  # Build success requirements
+  success:
+    # All stages must pass
+    required_stages:
+      - "code_quality"
+      - "unit_tests"
+      - "integration_tests"
+      - "security_scan"
+    
+    # Optional stages (warnings only)
+    optional_stages:
+      - "e2e_tests"
+      - "performance_tests"
+  
+  # Build performance requirements
+  performance:
+    # Maximum build time (minutes)
+    max_duration: 45
+    # Maximum artifact size (MB)
+    max_artifact_size: 100
+
+# Deployment Requirements
+deployment:
+  # Pre-deployment checks
+  pre_deployment:
+    required_checks:
+      - "all_tests_pass"
+      - "coverage_meets_threshold"
+      - "security_scan_clean"
+      - "performance_acceptable"
+  
+  # Environment-specific requirements
+  environments:
+    staging:
+      required_approvals: 1
+      auto_deploy: true
+      rollback_on_failure: true
+    
+    production:
+      required_approvals: 2
+      auto_deploy: false
+      rollback_on_failure: true
+      additional_checks:
+        - "load_test_pass"
+        - "security_review"
+
+# Notification Settings
+notifications:
+  # When to send notifications
+  triggers:
+    - "quality_gate_failure"
+    - "coverage_drop"
+    - "security_vulnerability"
+    - "performance_degradation"
+  
+  # Notification channels
+  channels:
+    slack:
+      enabled: true
+      webhook_url_env: "SLACK_WEBHOOK_URL"
+      channels:
+        - "#ci-cd"
+        - "#quality-alerts"
+    
+    email:
+      enabled: false
+      recipients:
+        - "team@ecomate.ai"
+    
+    github:
+      enabled: true
+      create_issues: true
+      assign_to_author: true
+
+# Reporting Configuration
+reporting:
+  # Report generation
+  generate:
+    - "coverage_report"
+    - "test_results"
+    - "quality_metrics"
+    - "security_report"
+    - "performance_report"
+  
+  # Report formats
+  formats:
+    - "html"
+    - "json"
+    - "xml"
+  
+  # Report retention
+  retention:
+    days: 30
+    max_reports: 100
+  
+  # Report publishing
+  publish:
+    github_pages: true
+    artifacts: true
+    pr_comments: true

@@ -1,0 +1,65 @@
+{
+    "files.associations": {
+        ".coveragerc": "ini",
+        "codecov.yml": "yaml",
+        "quality-gates.yml": "yaml",
+        "pytest.ini": "ini",
+        "*.coveragerc": "ini"
+    },
+    "python.analysis.exclude": [
+        ".coveragerc",
+        "codecov.yml",
+        "quality-gates.yml",
+        "pytest.ini"
+    ],
+    "python.analysis.ignore": [
+        ".coveragerc",
+        "codecov.yml",
+        "quality-gates.yml",
+        "pytest.ini"
+    ],
+    "basedpyright.analysis.exclude": [
+        ".coveragerc",
+        "codecov.yml",
+        "quality-gates.yml",
+        "pytest.ini",
+        "**/.coveragerc",
+        "**/codecov.yml",
+        "**/quality-gates.yml",
+        "**/pytest.ini"
+    ],
+    "basedpyright.analysis.ignore": [
+        ".coveragerc",
+        "codecov.yml",
+        "quality-gates.yml",
+        "pytest.ini",
+        "**/.coveragerc",
+        "**/codecov.yml",
+        "**/quality-gates.yml",
+        "**/pytest.ini"
+    ],
+    "basedpyright.disableLanguageServices": false,
+    "basedpyright.analysis.autoSearchPaths": false,
+    "basedpyright.analysis.useLibraryCodeForTypes": false,
+    "basedpyright.analysis.diagnosticMode": "workspace",
+    "[ini]": {
+        "basedpyright.disableLanguageServices": true
+    },
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.defaultInterpreterPath": "./venv/Scripts/python.exe",
+    "editor.rulers": [88, 120],
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "python.sortImports.args": [
+        "--profile",
+        "black"
+    ]
+}

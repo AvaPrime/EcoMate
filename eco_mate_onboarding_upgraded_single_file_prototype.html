@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoMate Onboarding & Setup · Prototype (Hardened + AI)</title>
+  <!-- Strict-CSP friendly: self-hosted CSS; move inline <script> to external file for production -->
+  <link rel="stylesheet" href="/assets/css/tailwind.css" />
+  <style>
+    html, body { height: 100%; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display:none; }
+  </style>
+</head>
+<body class="min-h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+
+  <!-- Theme toggle (persist optional) -->
+  <div class="fixed top-4 right-4 z-10">
+    <button id="themeToggle" class="rounded-xl border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-900">Toggle theme</button>
+  </div>
+
+  <main class="flex items-center justify-center p-4">
+    <section id="card" class="w-full max-w-xl rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10">
+      <header class="px-6 pt-6 pb-3">
+        <h1 class="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">
+          <span class="text-blue-600 dark:text-blue-400">EcoMate</span>
+          <span>Onboarding</span>
+        </h1>
+        <p class="mt-1 text-center text-xs text-gray-500">Local simulation; do not paste real secrets.</p>
+      </header>
+
+      <!-- Stepper -->
+      <div class="px-6 pb-2">
+        <ol class="flex items-center justify-center gap-3" aria-label="Progress">
+          <li class="step-dot" data-step="1"><span class="sr-only">Step 1</span></li>
+          <li class="step-dot" data-step="2"></li>
+          <li class="step-dot" data-step="3"></li>
+        </ol>
+      </div>
+
+      <div class="px-6 pb-6">
+        <!-- Step 1: Account -->
+        <div id="panel-1" role="region" aria-labelledby="h2-1">
+          <h2 id="h2-1" class="text-lg font-semibold text-center mb-4">Step 1 · Create your account</h2>
+          <form id="signupForm" class="space-y-4" novalidate>
+            <div>
+              <label for="username" class="block text-sm font-medium">Username</label>
+              <input id="username" name="username" type="text" autocomplete="username" required
+                     class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 outline-none focus:ring-4 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800" />
+              <p class="mt-1 text-xs text-gray-500">3–32 chars: letters, digits, - or _</p>
+            </div>
+
+            <div>
+              <label for="password" class="block text-sm font-medium">Password</label>
+              <div class="relative">
+                <input id="password" name="password" type="password" autocomplete="new-password" required
+                       class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pr-10 outline-none focus:ring-4 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800" />
+                <button type="button" id="togglePw" class="absolute inset-y-0 right-2 my-auto rounded-md px-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400">Show</button>
+              </div>
+              <div class="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" aria-hidden="true">
+                <div id="pwMeter" class="h-full w-0 bg-blue-500 transition-all"></div>
+              </div>
+              <p class="mt-1 text-xs text-gray-500">Use 12+ chars with lowercase, UPPERCASE, numbers, symbols.</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input id="tos" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" required />
+              <label for="tos" class="text-sm">I understand this is a local simulation.</label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div id="signupMsg" class="text-sm" aria-live="polite"></div>
+              <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">Continue</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Step 2: Keys -->
+        <div id="panel-2" class="hidden" role="region" aria-labelledby="h2-2">
+          <h2 id="h2-2" class="text-lg font-semibold text-center mb-1">Step 2 · Add API keys</h2>
+          <p class="mb-4 text-center text-xs text-gray-500">Paste fake values for demo. Secrets are masked and never sent to third parties.</p>
+
+          <form id="keysForm" class="space-y-4" novalidate>
+            <fieldset class="space-y-2">
+              <label for="shopifyToken" class="block text-sm font-medium">Shopify Admin Token</label>
+              <input id="shopifyToken" type="text" autocomplete="off" spellcheck="false"
+                     class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 outline-none focus:ring-4 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800" />
+            </fieldset>
+
+            <fieldset class="space-y-2">
+              <label class="block text-sm font-medium">WooCommerce Keys</label>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <input id="wooKey" type="text" placeholder="Consumer Key" class="rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 outline-none focus:ring-4 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800" />
+                <input id="wooSecret" type="text" placeholder="Consumer Secret" class="rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 outline-none focus:ring-4 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800" />
+              </div>
+            </fieldset>
+
+            <fieldset class="space-y-2">
+              <label for="gcpKey" class="block text-sm font-medium">GCP Service Account JSON</label>
+              <textarea id="gcpKey" rows="5" placeholder="{ \"type\": \"service_account\", ... }"
+                        class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 font-mono text-xs outline-none focus:ring-4 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800"></textarea>
+              <div class="flex items-center justify-between">
+                <label class="inline-flex items-center gap-2 text-xs text-gray-500">
+                  <input id="persistSession" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  Persist minimal state in sessionStorage
+                </label>
+                <button id="validateGcp" type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-900">Validate JSON</button>
+              </div>
+            </fieldset>
+
+            <div class="flex items-center justify-between">
+              <button type="button" id="backTo1" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-900">Back</button>
+              <div class="flex items-center gap-3">
+                <span id="keysMsg" class="text-sm" aria-live="polite"></span>
+                <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">Save & Review</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Step 3: Review + AI -->
+        <div id="panel-3" class="hidden" role="region" aria-labelledby="h2-3">
+          <h2 id="h2-3" class="text-lg font-semibold text-center mb-2">Step 3 · Review configuration</h2>
+          <p class="mb-3 text-center text-xs text-gray-500">Secrets are masked. Redacted summary only.</p>
+
+          <div id="review" class="max-h-80 overflow-auto rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900"></div>
+
+          <div class="mt-3 flex items-center justify-between">
+            <button id="copyConfig" type="button" class="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-900">Copy redacted summary</button>
+            <button id="backTo2" type="button" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-900">Back</button>
+          </div>
+
+          <!-- Gemini Integration Buttons (server-proxied) -->
+          <div class="mt-6 space-y-2">
+            <button id="genSummary" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-white">✨ Business Summary</button>
+            <button id="genInsights" class="w-full rounded-lg bg-green-600 px-4 py-2 text-white">✨ Strategic Insights</button>
+            <button id="genSchema" class="w-full rounded-lg bg-orange-600 px-4 py-2 text-white">✨ Data Schema</button>
+            <div id="aiOutput" class="mt-4 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm hidden"></div>
+          </div>
+
+          <!-- Chatbot (server-proxied) -->
+          <div class="fixed bottom-4 right-4">
+            <button id="chatToggle" class="rounded-full bg-blue-600 text-white w-12 h-12 flex items-center justify-center shadow-lg">💬</button>
+            <div id="chatWin" class="hidden mt-2 w-80 h-96 bg-white dark:bg-gray-900 rounded-lg shadow-xl flex flex-col">
+              <header class="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <span class="font-semibold">EcoMate Assistant</span>
+                <button id="chatClose" class="text-sm px-2 py-1">✖</button>
+              </header>
+              <div id="chatHist" class="flex-1 p-2 overflow-y-auto text-sm"></div>
+              <form id="chatForm" class="flex p-2 gap-2 border-t border-gray-200 dark:border-gray-700">
+                <input id="chatInput" class="flex-1 rounded border px-2" placeholder="Ask..." />
+                <button class="bg-blue-600 text-white px-3 rounded">Send</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // NOTE: For strict CSP, move this inline script to /assets/js/app.js and set Content-Security-Policy: script-src 'self'; (no 'unsafe-inline').
+
+    // ---------- Utilities ----------
+    const $ = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+    const state = {
+      step: 1,
+      user: { username: '', pwSet: false }, // do not persist raw password
+      keys: { shopifyToken: '', wooKey: '', wooSecret: '', gcpKey: '' }, // secrets stay in memory only
+      persist: false,
+      chatHistory: []
+    };
+
+    const validateUsername = (u) => /^[a-zA-Z0-9_-]{3,32}$/.test(u);
+    const scorePassword = (p) => [p.length>=8, p.length>=12, /[a-z]/.test(p), /[A-Z]/.test(p), /\d/.test(p), /[^\w]/.test(p)].reduce((a,b)=>a+(b?1:0),0);
+
+    const stepDots = () => {
+      $$('.step-dot').forEach((d,i)=>{
+        const n=i+1; d.innerHTML=''; d.className='step-dot relative flex h-8 w-8 items-center justify-center';
+        const inner=document.createElement('span'); inner.className='h-2.5 w-2.5 rounded-full transition-all';
+        if(n<state.step) inner.classList.add('bg-green-500'); else if(n===state.step) inner.classList.add('bg-blue-500'); else inner.classList.add('bg-gray-300','dark:bg-gray-700');
+        d.appendChild(inner);
+      });
+    };
+
+    const maskLight = (v) => !v ? 'Not Provided' : '******';
+    const maskHeavy = (v) => !v ? 'Not Provided' : `Present (${new Blob([v]).size} bytes)`; // no last-4 leak
+
+    // Only persist minimal, non-sensitive state
+    const saveMaybe = () => {
+      try{
+        if(!state.persist){ sessionStorage.removeItem('ecomateOnboarding'); return; }
+        const redacted={ step: state.step, user:{ username: state.user.username, pwSet: state.user.pwSet }, keys:{ hasShopify: !!state.keys.shopifyToken, hasWooKey: !!state.keys.wooKey, hasWooSecret: !!state.keys.wooSecret, hasGcp: !!state.keys.gcpKey }, persist:true };
+        sessionStorage.setItem('ecomateOnboarding', JSON.stringify(redacted));
+      }catch{}
+    };
+    const loadMaybe = () => {
+      try{
+        const raw=sessionStorage.getItem('ecomateOnboarding'); if(!raw) return; const s=JSON.parse(raw);
+        state.step=s.step||1; state.user.username=s.user?.username||''; state.user.pwSet=!!s.user?.pwSet; state.persist=!!s.persist;
+      }catch{}
+    };
+
+    const renderReview = () => {
+      const root=$('#review'); root.innerHTML='';
+      const kv=(k,v)=>`<div class="flex items-baseline justify-between gap-4 border-b border-gray-200 py-2 text-sm dark:border-gray-800"><span class="font-medium">${k}</span><span class="font-mono text-gray-700 dark:text-gray-300">${v}</span></div>`;
+      root.insertAdjacentHTML('beforeend','<h3 class="mb-2 text-base font-semibold">Account</h3>');
+      root.insertAdjacentHTML('beforeend',kv('Username', state.user.username||'—'));
+      root.insertAdjacentHTML('beforeend',kv('Password', state.user.pwSet?'Set (not stored)':'Not set'));
+      root.insertAdjacentHTML('beforeend','<h3 class="mt-4 mb-2 text-base font-semibold">Integrations</h3>');
+      root.insertAdjacentHTML('beforeend',kv('Shopify Admin Token', maskLight(state.keys.shopifyToken)));
+      root.insertAdjacentHTML('beforeend',kv('WooCommerce Consumer Key', maskLight(state.keys.wooKey)));
+      root.insertAdjacentHTML('beforeend',kv('WooCommerce Consumer Secret', maskLight(state.keys.wooSecret)));
+      root.insertAdjacentHTML('beforeend',kv('GCP Service Account JSON', maskHeavy(state.keys.gcpKey)));
+      root.insertAdjacentHTML('beforeend','<div class="pt-3 text-[11px] text-gray-500">In production, redaction is generated server-side and raw secrets never return to the client.</div>');
+    };
+
+    const redactedConfig = () => ({
+      account: { username: state.user.username, pwSet: state.user.pwSet },
+      integrations: { shopify: !!state.keys.shopifyToken, woocommerce: { key: !!state.keys.wooKey, secret: !!state.keys.wooSecret }, gcpServiceAccount: !!state.keys.gcpKey }
+    });
+
+    const goStep = (n) => { state.step=n; ['panel-1','panel-2','panel-3'].forEach((id,idx)=>$('#'+id).classList.toggle('hidden', idx!==(n-1))); stepDots(); if(n===3) renderReview(); saveMaybe(); };
+
+    // ---------- Theme ----------
+    $('#themeToggle').addEventListener('click',()=>document.documentElement.classList.toggle('dark'));
+
+    // ---------- Step 1: Account ----------
+    $('#togglePw').addEventListener('click',()=>{ const input=$('#password'); const t=input.type==='password'?'text':'password'; input.type=t; $('#togglePw').textContent=t==='password'?'Show':'Hide'; });
+    $('#password').addEventListener('input',()=>{ const p=$('#password').value||''; const s=Math.min(scorePassword(p),5); const meter=$('#pwMeter'); meter.style.width=`${(s/5)*100}%`; meter.className='h-full transition-all '+(s<2?'bg-red-500':s<4?'bg-yellow-500':'bg-green-500'); });
+
+    $('#signupForm').addEventListener('submit',(e)=>{
+      e.preventDefault(); const u=$('#username').value.trim(); const p=$('#password').value; const msg=$('#signupMsg');
+      if(!validateUsername(u)){ msg.textContent='Username must be 3–32 chars (letters, digits, - or _)'; msg.className='text-sm text-red-600'; return; }
+      if(scorePassword(p)<3){ msg.textContent='Password too weak.'; msg.className='text-sm text-red-600'; return; }
+      msg.textContent='Simulating account creation…'; msg.className='text-sm text-blue-600';
+      setTimeout(()=>{ state.user.username=u; state.user.pwSet=!!p; msg.textContent=`Welcome, ${u}!`; msg.className='text-sm text-green-600'; goStep(2); },700);
+    });
+
+    // ---------- Step 2: Keys ----------
+    $('#backTo1').addEventListener('click',()=>goStep(1));
+    $('#validateGcp').addEventListener('click',()=>{ const raw=$('#gcpKey').value.trim(); const msg=$('#keysMsg'); if(!raw){ msg.textContent='No JSON to validate.'; msg.className='text-sm text-red-600'; return; }
+      try{ const j=JSON.parse(raw); const req=['type','project_id','private_key_id','private_key','client_email']; const miss=req.filter(k=>!(k in j)); if(miss.length){ msg.textContent=`Missing fields: ${miss.join(', ')}`; msg.className='text-sm text-yellow-600'; } else { msg.textContent='Looks like valid service account JSON (basic checks).'; msg.className='text-sm text-green-600'; } }
+      catch{ msg.textContent='Invalid JSON'; msg.className='text-sm text-red-600'; }
+    });
+
+    $('#keysForm').addEventListener('submit',(e)=>{
+      e.preventDefault(); const msg=$('#keysMsg');
+      state.keys.shopifyToken=$('#shopifyToken').value.trim();
+      state.keys.wooKey=$('#wooKey').value.trim();
+      state.keys.wooSecret=$('#wooSecret').value.trim();
+      state.keys.gcpKey=$('#gcpKey').value.trim();
+      state.persist=$('#persistSession').checked; saveMaybe();
+      msg.textContent='Simulating secure key capture…'; msg.className='text-sm text-blue-600';
+      setTimeout(()=>{ msg.textContent='Keys captured locally. Proceed to review.'; msg.className='text-sm text-green-600'; goStep(3); },600);
+    });
+
+    // ---------- Step 3: Review ----------
+    $('#backTo2').addEventListener('click',()=>goStep(2));
+    $('#copyConfig').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(JSON.stringify(redactedConfig(),null,2)); const b=$('#copyConfig'); const t=b.textContent; b.textContent='Copied'; setTimeout(()=>b.textContent=t,900); }catch{} });
+
+    // ---------- AI (server-proxied) ----------
+    const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+    async function fetchWithBackoff(url, options, retries=2, delay=500){
+      try{ const res=await fetch(url, options); if(!res.ok) throw new Error(String(res.status)); return res; }
+      catch(err){ if(retries<=0) throw err; await sleep(delay); return fetchWithBackoff(url, options, retries-1, delay*2); }
+    }
+    async function callAI(endpoint, payload, signal){
+      const res=await fetchWithBackoff(`/api/ai/${endpoint}`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal });
+      return res.json();
+    }
+
+    const aiOut=$('#aiOutput');
+    const setOut=(msg)=>{ aiOut.classList.remove('hidden'); aiOut.textContent=msg; };
+
+    $('#genSummary').addEventListener('click',async()=>{ try{ setOut('Generating summary…'); const out=await callAI('summary',{ config:redactedConfig() }); aiOut.textContent=out.text||out.error||'No output'; }catch(e){ aiOut.textContent='Error generating summary.'; }});
+    $('#genInsights').addEventListener('click',async()=>{ try{ setOut('Generating insights…'); const out=await callAI('insights',{ config:redactedConfig() }); aiOut.textContent=out.text||out.error||'No output'; }catch(e){ aiOut.textContent='Error generating insights.'; }});
+    $('#genSchema').addEventListener('click',async()=>{ try{ setOut('Generating schema…'); const out=await callAI('schema',{ config:redactedConfig() }); aiOut.textContent = out?.json ? JSON.stringify(out.json,null,2) : (out.text||out.error||'No output'); }catch(e){ aiOut.textContent='Error generating schema.'; }});
+
+    // Chatbot
+    let chatAbort=null;
+    $('#chatToggle').addEventListener('click',()=>$('#chatWin').classList.toggle('hidden'));
+    $('#chatClose').addEventListener('click',()=>$('#chatWin').classList.add('hidden'));
+    $('#chatForm').addEventListener('submit', async (e)=>{
+      e.preventDefault(); const input=$('#chatInput'); const val=input.value.trim(); if(!val) return; const hist=$('#chatHist');
+      hist.insertAdjacentHTML('beforeend',`<div class='text-right text-blue-600 mb-1'>${val}</div>`); input.value=''; input.disabled=true; hist.scrollTop=hist.scrollHeight;
+      // cancel previous
+      if(chatAbort) chatAbort.abort(); chatAbort=new AbortController();
+      try{
+        const out=await callAI('chat',{ msg:val, history: state.chatHistory, context: redactedConfig() }, chatAbort.signal);
+        const text=out.text||out.error||'Sorry, no response.'; hist.insertAdjacentHTML('beforeend',`<div class='text-gray-800 dark:text-gray-200 mb-1 whitespace-pre-wrap'>${text}</div>`);
+        state.chatHistory.push({ role:'user', content:val }, { role:'assistant', content:text });
+      }catch{ hist.insertAdjacentHTML('beforeend',`<div class='text-red-700 mb-1'>Error contacting assistant.</div>`);} finally { input.disabled=false; input.focus(); hist.scrollTop=hist.scrollHeight; }
+    });
+
+    // ---------- Init ----------
+    (function init(){
+      try{ loadMaybe(); }catch{}
+      stepDots();
+      ['panel-1','panel-2','panel-3'].forEach((id,idx)=>$('#'+id).classList.toggle('hidden', idx!==(state.step-1)));
+    })();
+  </script>
+
+  <!--
+  PRODUCTION NOTES
+  1) CSP: Prefer external JS file (no inline) and strict headers, e.g.:
+     Content-Security-Policy: default-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'
+  2) Secrets: Never persist raw secrets client-side. Proxy all AI calls through your backend. Use KMS/Vault + envelope encryption. Return only redacted views to the client.
+  3) Rate limiting & audit: Apply per-user quotas, structured audit logs, and PII scrubbing on the server for /api/ai/* endpoints.
+  4) Endpoints (example contract):
+     POST /api/ai/summary  -> { text }
+     POST /api/ai/insights -> { text }
+     POST /api/ai/schema   -> { json | text }
+     POST /api/ai/chat     -> { text }
+     Each request body includes { config: {…redacted…} } and optional { history, context }.
+  -->
+</body>
+</html>

@@ -1,0 +1,180 @@
+# Codecov configuration for EcoMate AI project
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  # Coverage precision (number of decimal places)
+  precision: 2
+  
+  # Round coverage to nearest integer
+  round: down
+  
+  # Coverage range for color coding
+  range: "70...100"
+  
+  # Status checks configuration
+  status:
+    # Project-wide coverage status
+    project:
+      default:
+        # Target coverage percentage
+        target: 85%
+        # Threshold for coverage drop
+        threshold: 2%
+        # Base branch for comparison
+        base: auto
+        # Require coverage to increase or stay same
+        if_ci_failed: error
+        # Only post status if coverage changes
+        only_pulls: false
+        # Paths to include in project coverage
+        paths:
+          - "src/"
+        # Flags to include
+        flags:
+          - unit-tests
+          - integration-tests
+          - e2e-tests
+    
+    # Patch coverage (for new code in PRs)
+    patch:
+      default:
+        # Target coverage for new code
+        target: 90%
+        # Threshold for patch coverage
+        threshold: 5%
+        # Base branch for comparison
+        base: auto
+        # Require patch coverage
+        if_ci_failed: error
+        # Only check patches in PRs
+        only_pulls: true
+        # Paths to include in patch coverage
+        paths:
+          - "src/"
+
+  # Individual flag configurations
+  flags:
+    unit-tests:
+      # Paths covered by unit tests
+      paths:
+        - "src/"
+      # Carryforward previous results if missing
+      carryforward: true
+      # Required for status checks
+      required: true
+    
+    integration-tests:
+      # Paths covered by integration tests
+      paths:
+        - "src/"
+      # Carryforward previous results if missing
+      carryforward: true
+      # Required for status checks
+      required: true
+    
+    e2e-tests:
+      # Paths covered by e2e tests
+      paths:
+        - "src/"
+      # Carryforward previous results if missing
+      carryforward: true
+      # Not required (e2e tests may not always run)
+      required: false
+
+# Comment configuration for PRs
+comment:
+  # Layout of the coverage comment
+  layout: "reach,diff,flags,tree,footer"
+  
+  # Behavior for posting comments
+  behavior: default
+  
+  # Require changes to post comment
+  require_changes: true
+  
+  # Require base coverage to post comment
+  require_base: false
+  
+  # Require head coverage to post comment
+  require_head: true
+  
+  # Show coverage for individual flags
+  show_carryforward_flags: true
+
+# GitHub integration
+github_checks:
+  # Enable GitHub status checks
+  annotations: true
+
+# Ignore paths from coverage
+ignore:
+  - "tests/"
+  - "docs/"
+  - "scripts/"
+  - "migrations/"
+  - "alembic/"
+  - "*.md"
+  - "*.txt"
+  - "*.yml"
+  - "*.yaml"
+  - "*.json"
+  - "*.toml"
+  - "*.cfg"
+  - "*.ini"
+  - "Dockerfile*"
+  - "docker-compose*"
+  - "requirements*.txt"
+  - "setup.py"
+  - "conftest.py"
+  - "manage.py"
+  - "wsgi.py"
+  - "asgi.py"
+  - "__pycache__/"
+  - "*.pyc"
+  - ".git/"
+  - ".github/"
+  - ".vscode/"
+  - ".idea/"
+  - "venv/"
+  - "env/"
+  - ".venv/"
+  - "node_modules/"
+  - "build/"
+  - "dist/"
+  - ".tox/"
+  - ".pytest_cache/"
+  - "htmlcov/"
+
+# Notification settings
+notifications:
+  # Disable email notifications
+  email: false
+  
+  # Slack notifications (if webhook configured)
+  slack:
+    # Only notify on coverage changes
+    default:
+      only_pulls: true
+      threshold: 2%
+
+# Parsing configuration
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+  
+  javascript:
+    enable_partials: yes
+
+# Profiling configuration
+profiling:
+  # Enable critical file detection
+  critical_files_paths:
+    - "src/core/"
+    - "src/api/"
+    - "src/workflows/"
+    - "src/parsers/"
+    - "src/database/"

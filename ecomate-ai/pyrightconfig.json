@@ -1,0 +1,28 @@
+{
+    "exclude": [
+        ".coveragerc",
+        "codecov.yml",
+        "quality-gates.yml",
+        "pytest.ini",
+        "**/.coveragerc",
+        "**/codecov.yml",
+        "**/quality-gates.yml",
+        "**/pytest.ini",
+        "htmlcov/**",
+        "coverage.xml",
+        "coverage.json",
+        "test-report.html",
+        "junit.xml",
+        ".coverage"
+    ],
+    "ignore": [
+        ".coveragerc",
+        "codecov.yml",
+        "quality-gates.yml",
+        "pytest.ini"
+    ],
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.11",
+    "pythonPlatform": "Windows"
+}
