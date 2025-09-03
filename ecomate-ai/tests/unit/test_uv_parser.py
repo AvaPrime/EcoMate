@@ -5,8 +5,8 @@ from unittest.mock import patch
 from bs4 import BeautifulSoup
 import json
 
-from src.parsers.uv_reactors import UVReactorParser
-from src.utils.exceptions import ParserError, ValidationError
+from services.parsers.uv import UVReactorParser
+from services.utils.exceptions import ParserError, ValidationError
 
 
 class TestUVReactorParser:

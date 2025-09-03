@@ -3,7 +3,7 @@
 import pytest
 from bs4 import BeautifulSoup
 
-from src.utils.html_parser import (
+from services.utils.html_tables import (
     HTMLParser,
     HTMLElement,
     extract_text,

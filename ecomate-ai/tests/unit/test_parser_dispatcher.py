@@ -4,11 +4,11 @@ import pytest
 from unittest.mock import patch
 import json
 
-from src.parsers.dispatcher import ParserDispatcher
-from src.parsers.pumps import PumpParser
-from src.parsers.uv_reactors import UVReactorParser
-from src.parsers.llm_fallback import LLMFallbackParser
-from src.utils.exceptions import ParserError
+from services.parsers.dispatcher import ParserDispatcher
+from services.parsers.pumps import PumpParser
+from services.parsers.uv import UVReactorParser
+from services.parsers.llm_fallback import LLMFallbackParser
+from services.utils.exceptions import ParserError
 
 
 class TestParserDispatcher:

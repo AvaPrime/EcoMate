@@ -5,8 +5,8 @@ from unittest.mock import patch
 from bs4 import BeautifulSoup
 import json
 
-from src.parsers.pumps import PumpParser
-from src.utils.exceptions import ParserError, ValidationError
+from services.parsers.pumps import PumpParser
+from services.utils.exceptions import ParserError, ValidationError
 
 
 class TestPumpParser:

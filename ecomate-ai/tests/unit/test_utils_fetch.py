@@ -7,7 +7,7 @@ import aiohttp
 from aiohttp import ClientTimeout
 import json
 
-from src.utils.fetch import (
+from services.utils.fetch import (
     FetchClient,
     FetchResult,
     RateLimiter,

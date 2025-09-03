@@ -30,6 +30,12 @@ def test_data_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
+def test_fixtures_dir() -> Path:
+    """Path to test fixtures directory (alias for test_data_dir)."""
+    return Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(scope="session")
 def html_samples_dir(test_data_dir: Path) -> Path:
     """Path to HTML sample files."""
     return test_data_dir / "html_samples"

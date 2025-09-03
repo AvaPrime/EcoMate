@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 import io
 from minio.error import S3Error
 
-from src.utils.minio_storage import (
+from services.utils.minio_store import (
     MinIOClient,
     StorageConfig,
     StorageResult,
@@ -20,7 +20,7 @@ from src.utils.minio_storage import (
     sync_directory,
     compress_and_upload
 )
-from src.utils.exceptions import StorageError as StorageException, ValidationError
+from services.utils.exceptions import StorageError as StorageException, ValidationError
 
 
 class TestStorageConfig:
@@ -796,7 +796,7 @@ def test_file_size_formatting(file_size, expected_unit):
 ])
 def test_bucket_name_validation(bucket_name, is_valid):
     """Parametrized test for bucket name validation."""
-    from src.utils.minio_storage import validate_bucket_name
+    from services.utils.minio_store import validate_bucket_name
     
     assert validate_bucket_name(bucket_name) == is_valid
 
