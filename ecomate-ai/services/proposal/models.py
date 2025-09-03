@@ -94,3 +94,35 @@ class Proposal(BaseModel):
     status: str = Field(default="draft", description="Proposal status")
     notes: Optional[str] = Field(None, description="Additional notes")
     attachments: List[str] = Field(default_factory=list, description="Attachment file paths")
+
+class Quote(BaseModel):
+    """Quote model for cost calculations"""
+    bom: List[Dict[str, Any]] = Field(..., description="Bill of materials items")
+    materials_subtotal: float = Field(..., description="Materials subtotal")
+    labour: float = Field(..., description="Labour costs")
+    logistics: float = Field(..., description="Logistics costs")
+    opex_year1: float = Field(..., description="First year operational expenses")
+    total_before_margin: float = Field(..., description="Total before margin")
+    total_quote: float = Field(..., description="Final quoted total")
+
+class ClientContext(BaseModel):
+    """Client context information"""
+    name: str = Field(..., description="Client name")
+    location: Optional[str] = Field(None, description="Client location")
+    contact_email: Optional[str] = Field(None, description="Contact email")
+    contact_phone: Optional[str] = Field(None, description="Contact phone")
+
+class SystemSpec(BaseModel):
+    """System specification model"""
+    type: str = Field(..., description="System type")
+    capacity_lpd: Optional[float] = Field(None, description="Capacity in liters per day")
+    offgrid: bool = Field(default=False, description="Off-grid system flag")
+    flow_rate_mgd: Optional[float] = Field(None, description="Flow rate in MGD")
+    treatment_requirements: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Treatment requirements")
+
+class Assumptions(BaseModel):
+    """Project assumptions model"""
+    distance_km: float = Field(default=50.0, description="Distance in kilometers")
+    installation_complexity: str = Field(default="standard", description="Installation complexity")
+    site_conditions: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Site conditions")
+    timeline_constraints: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Timeline constraints")

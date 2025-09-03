@@ -1,8 +1,11 @@
 from typing import List, Dict, Optional, Any
-from .models import Component, BOMItem, BillOfMaterials, ProjectRequirements, ComponentType
+from .models import Component, BOMItem, BillOfMaterials, ProjectRequirements, ComponentType, SystemSpec
 import json
 import logging
 from datetime import datetime
+import asyncio
+from ..vendors.client import VendorClient
+from ..vendors.models import VendorCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -317,3 +320,142 @@ class BOMEngine:
         """Optimize BOM for lowest environmental impact"""
         # Implementation would involve selecting components with better environmental scores
         return bom
+    
+    async def generate_bom_with_vendor_pricing(self, project_id: str, requirements: ProjectRequirements, 
+                                             vendor_client: Optional[VendorClient] = None) -> BillOfMaterials:
+        """Generate BOM with live vendor pricing"""
+        # Generate base BOM first
+        bom = self.generate_bom(project_id, requirements)
+        
+        if vendor_client:
+            # Get component IDs for vendor lookup
+            component_ids = [item.component.id for item in bom.items]
+            
+            try:
+                # Get live pricing from vendors
+                vendor_components = await vendor_client.get_best_pricing(component_ids)
+                
+                # Update BOM items with vendor pricing
+                vendor_lookup = {comp.model: comp for comp in vendor_components}
+                
+                updated_items = []
+                for item in bom.items:
+                    vendor_comp = vendor_lookup.get(item.component.id)
+                    if vendor_comp:
+                        # Update component with vendor pricing
+                        updated_component = item.component.model_copy()
+                        updated_component.unit_cost = vendor_comp.unit_price
+                        
+                        # Update BOM item
+                        updated_item = item.model_copy()
+                        updated_item.component = updated_component
+                        updated_item.total_cost = vendor_comp.unit_price * item.quantity
+                        updated_items.append(updated_item)
+                    else:
+                        updated_items.append(item)
+                
+                # Recalculate totals
+                bom.items = updated_items
+                bom.total_material_cost = sum(item.total_cost for item in bom.items)
+                bom.total_installation_cost = sum(item.component.installation_cost * item.quantity for item in bom.items)
+                bom.total_cost = bom.total_material_cost + bom.total_installation_cost
+                
+            except Exception as e:
+                logger.warning(f"Failed to get vendor pricing, using default prices: {e}")
+        
+        return bom
+
+
+# Global instances for backward compatibility
+_component_db = ComponentDatabase()
+_bom_engine = BOMEngine(_component_db)
+
+def base_bom_for(spec: SystemSpec) -> List[Dict[str, Any]]:
+    """Generate base BOM for system specification (backward compatibility function)"""
+    # Convert SystemSpec to ProjectRequirements
+    requirements = ProjectRequirements(
+        flow_rate_mgd=spec.flow_rate_mgd or (spec.capacity_lpd / 3785411.78 if spec.capacity_lpd else 1.0),
+        treatment_type=spec.type,
+        effluent_standards=spec.treatment_requirements or {},
+        site_constraints={"offgrid": spec.offgrid} if hasattr(spec, 'offgrid') else {}
+    )
+    
+    # Generate BOM
+    bom = _bom_engine.generate_bom(f"spec_{spec.type}", requirements)
+    
+    # Convert to simple format expected by cost_model
+    bom_items = []
+    for item in bom.items:
+        bom_items.append({
+            "sku": item.component.id,
+            "description": f"{item.component.name} ({item.component.manufacturer})",
+            "qty": item.quantity,
+            "unit_price": item.component.unit_cost
+        })
+    
+    return bom_items
+
+async def base_bom_for_with_vendors(spec: SystemSpec, vendor_client: Optional[VendorClient] = None) -> List[Dict[str, Any]]:
+    """Generate base BOM with vendor pricing integration"""
+    # Convert SystemSpec to ProjectRequirements
+    requirements = ProjectRequirements(
+        flow_rate_mgd=spec.flow_rate_mgd or (spec.capacity_lpd / 3785411.78 if spec.capacity_lpd else 1.0),
+        treatment_type=spec.type,
+        effluent_standards=spec.treatment_requirements or {},
+        site_constraints={"offgrid": spec.offgrid} if hasattr(spec, 'offgrid') else {}
+    )
+    
+    # Generate BOM with vendor pricing
+    bom = await _bom_engine.generate_bom_with_vendor_pricing(f"spec_{spec.type}", requirements, vendor_client)
+    
+    # Convert to simple format expected by cost_model
+    bom_items = []
+    for item in bom.items:
+        bom_items.append({
+            "sku": item.component.id,
+            "description": f"{item.component.name} ({item.component.manufacturer})",
+            "qty": item.quantity,
+            "unit_price": item.component.unit_cost
+        })
+    
+    return bom_items
+
+def setup_vendor_client() -> VendorClient:
+    """Setup and configure vendor client with adapters"""
+    from ..vendors.adapters import GrundfosAdapter, GenericDistributorAdapter, MockVendorAdapter
+    import os
+    
+    client = VendorClient()
+    
+    # Register Grundfos adapter if credentials available
+    grundfos_api_key = os.getenv('GRUNDFOS_API_KEY')
+    if grundfos_api_key:
+        grundfos_creds = VendorCredentials(
+            vendor_name="Grundfos",
+            base_url="https://api.grundfos.com",
+            api_key=grundfos_api_key,
+            auth_type="api_key"
+        )
+        client.register_adapter("grundfos", GrundfosAdapter(grundfos_creds))
+    
+    # Register generic distributor if credentials available
+    distributor_api_key = os.getenv('DISTRIBUTOR_API_KEY')
+    if distributor_api_key:
+        distributor_creds = VendorCredentials(
+            vendor_name="Industrial Supply Co",
+            base_url=os.getenv('DISTRIBUTOR_BASE_URL', 'https://api.industrialsupply.com'),
+            api_key=distributor_api_key,
+            auth_type="api_key"
+        )
+        client.register_adapter("distributor", GenericDistributorAdapter(distributor_creds))
+    
+    # Always register mock adapter for development/testing
+    mock_creds = VendorCredentials(
+        vendor_name="Mock Vendor",
+        base_url="http://localhost:8000",
+        api_key="mock_key",
+        auth_type="api_key"
+    )
+    client.register_adapter("mock", MockVendorAdapter(mock_creds))
+    
+    return client
