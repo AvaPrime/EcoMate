@@ -1,236 +1,229 @@
 {
-    // Workspace-level settings for EcoMate multi-project repository
+  // Workspace-level settings for EcoMate multi-project repository
 
-    // Python Language Server Configuration
-    "python.languageServer": "Pylance",
-    "python.analysis.typeCheckingMode": "basic",
-    "python.analysis.autoImportCompletions": true,
-    "python.analysis.autoFormatStrings": true,
-    "python.analysis.completeFunctionParens": true,
+  // Python Language Server Configuration
+  "python.languageServer": "None",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.autoFormatStrings": true,
+  "python.analysis.completeFunctionParens": true,
 
-    // File Associations for Configuration Files
-    "files.associations": {
-        ".coveragerc": "ini",
-        "codecov.yml": "yaml",
-        "quality-gates.yml": "yaml",
-        "pytest.ini": "ini",
-        "*.coveragerc": "ini",
-        "*.cfg": "ini",
-        "*.conf": "ini",
-        "Makefile": "makefile",
-        "*.mk": "makefile",
-        "docker-compose*.yml": "dockercompose",
-        "*.md": "markdown"
-    },
+  // File Associations for Configuration Files
+  "files.associations": {
+    ".coveragerc": "ini",
+    "codecov.yml": "yaml",
+    "quality-gates.yml": "yaml",
+    "pytest.ini": "ini",
+    "*.coveragerc": "ini",
+    "*.cfg": "ini",
+    "*.conf": "ini",
+    "Makefile": "makefile",
+    "*.mk": "makefile",
+    "docker-compose*.yml": "dockercompose",
+    "*.md": "markdown"
+  },
 
-    // Python Analysis Exclusions
-    "python.analysis.exclude": [
-        "**/node_modules",
-        "**/.venv",
-        "**/venv",
-        "**/env",
-        "**/__pycache__",
-        "**/build",
-        "**/dist",
-        "**/.git",
-        "**/.pytest_cache",
-        "**/htmlcov",
-        "**/.coverage*",
-        ".coveragerc",
-        "codecov.yml",
-        "quality-gates.yml",
-        "pytest.ini"
-    ],
+  // Python Analysis Exclusions
+  "python.analysis.exclude": [
+    "**/node_modules",
+    "**/.venv",
+    "**/venv",
+    "**/env",
+    "**/__pycache__",
+    "**/build",
+    "**/dist",
+    "**/.git",
+    "**/.pytest_cache",
+    "**/htmlcov",
+    "**/.coverage*",
+    ".coveragerc",
+    "codecov.yml",
+    "quality-gates.yml",
+    "pytest.ini"
+  ],
 
-    "python.analysis.ignore": [
-        ".coveragerc",
-        "codecov.yml",
-        "quality-gates.yml",
-        "pytest.ini"
-    ],
+  "python.analysis.ignore": [
+    ".coveragerc",
+    "codecov.yml",
+    "quality-gates.yml",
+    "pytest.ini"
+  ],
 
-    // Editor Configuration
+  // Editor Configuration
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+  "editor.formatOnType": false,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "editor.rulers": [88, 120],
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.trimAutoWhitespace": true,
+  "editor.renderWhitespace": "boundary",
+  "editor.wordWrap": "bounded",
+  "editor.wordWrapColumn": 120,
+
+  // Files Configuration
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    "**/*.pyd": true,
+    "**/.pytest_cache": true,
+    "**/htmlcov": true,
+    "**/.coverage": true,
+    "**/.coverage.*": true,
+    "**/coverage.xml": true,
+    "**/junit.xml": true,
+    "**/.tox": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/*.egg-info": true,
+    "**/node_modules": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
+  },
+
+  // Search Configuration
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/env": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/htmlcov": true,
+    "**/.coverage*": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/*.egg-info": true,
+    "**/.git": true,
+    "**/.tox": true
+  },
+
+  // Python Formatting and Linting
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": ["--line-length=88", "--target-version=py311"],
+  "python.sortImports.args": ["--profile", "black", "--line-length=88"],
+
+  // Testing Configuration
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "--verbose",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings"
+  ],
+
+  // Git Configuration
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "git.postCommitCommand": "none",
+
+  // Markdown Configuration
+  "markdown.preview.breaks": true,
+  "markdown.preview.linkify": true,
+  "markdown.preview.typographer": true,
+  "markdown.extension.toc.levels": "2..6",
+
+  // Language-specific Settings
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python",
     "editor.formatOnSave": true,
-    "editor.formatOnPaste": false,
-    "editor.formatOnType": false,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": "explicit",
-        "source.fixAll": "explicit"
+      "source.organizeImports": "explicit"
     },
-    "editor.rulers": [88, 120],
-    "editor.tabSize": 4,
+    "editor.tabSize": 4
+  },
+
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    },
+    "editor.tabSize": 2
+  },
+
+  "[yaml]": {
+    "editor.tabSize": 2,
     "editor.insertSpaces": true,
-    "editor.detectIndentation": true,
-    "editor.trimAutoWhitespace": true,
-    "editor.renderWhitespace": "boundary",
-    "editor.wordWrap": "bounded",
-    "editor.wordWrapColumn": 120,
+    "editor.autoIndent": "advanced"
+  },
 
-    // Files Configuration
-    "files.trimTrailingWhitespace": true,
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "files.encoding": "utf8",
-    "files.eol": "\n",
-    "files.exclude": {
-        "**/__pycache__": true,
-        "**/*.pyc": true,
-        "**/*.pyo": true,
-        "**/*.pyd": true,
-        "**/.pytest_cache": true,
-        "**/htmlcov": true,
-        "**/.coverage": true,
-        "**/.coverage.*": true,
-        "**/coverage.xml": true,
-        "**/junit.xml": true,
-        "**/.tox": true,
-        "**/build": true,
-        "**/dist": true,
-        "**/*.egg-info": true,
-        "**/node_modules": true,
-        "**/.DS_Store": true,
-        "**/Thumbs.db": true
-    },
+  "[json]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
 
-    // Search Configuration
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/venv": true,
-        "**/.venv": true,
-        "**/env": true,
-        "**/__pycache__": true,
-        "**/.pytest_cache": true,
-        "**/htmlcov": true,
-        "**/.coverage*": true,
-        "**/build": true,
-        "**/dist": true,
-        "**/*.egg-info": true,
-        "**/.git": true,
-        "**/.tox": true
-    },
+  "[jsonc]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
 
-    // Python Formatting and Linting
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [
-        "--line-length=88",
-        "--target-version=py311"
-    ],
-    "python.sortImports.args": [
-        "--profile",
-        "black",
-        "--line-length=88"
-    ],
+  "[dockerfile]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
 
-    // Testing Configuration
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestArgs": [
-        "--verbose",
-        "--tb=short",
-        "--strict-markers",
-        "--disable-warnings"
-    ],
+  "[makefile]": {
+    "editor.insertSpaces": false,
+    "editor.detectIndentation": false
+  },
 
-    // Git Configuration
-    "git.ignoreLimitWarning": true,
-    "git.autofetch": true,
-    "git.confirmSync": false,
-    "git.enableSmartCommit": true,
-    "git.postCommitCommand": "none",
+  "[shellscript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
 
-    // Markdown Configuration
-    "markdown.preview.breaks": true,
-    "markdown.preview.linkify": true,
-    "markdown.preview.typographer": true,
-    "markdown.extension.toc.levels": "2..6",
+  // Terminal Configuration
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.scrollback": 10000,
 
-    // Language-specific Settings
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.python",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        },
-        "editor.tabSize": 4
-    },
+  // Explorer Configuration
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.sortOrder": "type",
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.py": "${capture}.pyc, ${capture}.pyo, ${capture}.pyd",
+    "requirements.txt": "requirements-*.txt, requirements.*.txt",
+    "docker-compose.yml": "docker-compose.*.yml, docker-compose.*.yaml",
+    "Makefile": "*.mk",
+    "README.md": "CHANGELOG.md, CONTRIBUTING.md, LICENSE*, AUTHORS*",
+    "pytest.ini": ".coveragerc, codecov.yml, quality-gates.yml"
+  },
 
-    "[markdown]": {
-        "editor.wordWrap": "on",
-        "editor.quickSuggestions": {
-            "comments": "off",
-            "strings": "off",
-            "other": "off"
-        },
-        "editor.tabSize": 2
-    },
+  // Workbench Configuration
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+  "workbench.startupEditor": "readme",
+  "workbench.tree.indent": 20,
+  "workbench.colorTheme": "Default Dark+",
 
-    "[yaml]": {
-        "editor.tabSize": 2,
-        "editor.insertSpaces": true,
-        "editor.autoIndent": "advanced"
-    },
+  // Extensions Configuration
+  // This setting is deprecated - using extensions.ignoreRecommendations instead
+  "extensions.ignoreRecommendations": false,
 
-    "[json]": {
-        "editor.tabSize": 2,
-        "editor.insertSpaces": true
-    },
-
-    "[jsonc]": {
-        "editor.tabSize": 2,
-        "editor.insertSpaces": true
-    },
-
-    "[dockerfile]": {
-        "editor.tabSize": 4,
-        "editor.insertSpaces": true
-    },
-
-    "[makefile]": {
-        "editor.insertSpaces": false,
-        "editor.detectIndentation": false
-    },
-
-    "[shellscript]": {
-        "editor.tabSize": 2,
-        "editor.insertSpaces": true
-    },
-
-    // Terminal Configuration
-    "terminal.integrated.defaultProfile.windows": "PowerShell",
-    "terminal.integrated.copyOnSelection": true,
-    "terminal.integrated.cursorBlinking": true,
-    "terminal.integrated.scrollback": 10000,
-
-    // Explorer Configuration
-    "explorer.confirmDelete": false,
-    "explorer.confirmDragAndDrop": false,
-    "explorer.sortOrder": "type",
-    "explorer.fileNesting.enabled": true,
-    "explorer.fileNesting.patterns": {
-        "*.py": "${capture}.pyc, ${capture}.pyo, ${capture}.pyd",
-        "requirements.txt": "requirements-*.txt, requirements.*.txt",
-        "docker-compose.yml": "docker-compose.*.yml, docker-compose.*.yaml",
-        "Makefile": "*.mk",
-        "README.md": "CHANGELOG.md, CONTRIBUTING.md, LICENSE*, AUTHORS*",
-        "pytest.ini": ".coveragerc, codecov.yml, quality-gates.yml"
-    },
-
-    // Workbench Configuration
-    "workbench.editor.enablePreview": false,
-    "workbench.editor.enablePreviewFromQuickOpen": false,
-    "workbench.startupEditor": "readme",
-    "workbench.tree.indent": 20,
-    "workbench.colorTheme": "Default Dark+",
-
-    // Extensions Configuration
-    // This setting is deprecated - using extensions.ignoreRecommendations instead
-    "extensions.ignoreRecommendations": false,
-
-    // Performance Optimizations
-    "typescript.preferences.includePackageJsonAutoImports": "off",
-    "javascript.preferences.includePackageJsonAutoImports": "off",
-    "search.followSymlinks": false,
-    "search.smartCase": true,
-    "search.useGlobalIgnoreFiles": true,
-    "search.useParentIgnoreFiles": true
+  // Performance Optimizations
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "javascript.preferences.includePackageJsonAutoImports": "off",
+  "search.followSymlinks": false,
+  "search.smartCase": true,
+  "search.useGlobalIgnoreFiles": true,
+  "search.useParentIgnoreFiles": true
 }
