@@ -507,22 +507,4 @@ def _get_category_description(category: StandardCategory) -> str:
     return descriptions.get(category, "Standard category")
 
 
-# Error handlers
-
-@regulatory_router.exception_handler(ValueError)
-async def value_error_handler(request, exc):
-    """Handle ValueError exceptions."""
-    return JSONResponse(
-        status_code=400,
-        content={"error": "Invalid input", "detail": str(exc)}
-    )
-
-
-@regulatory_router.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    """Handle general exceptions."""
-    logger.error(f"Unhandled exception in regulatory router: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"error": "Internal server error", "detail": "An unexpected error occurred"}
-    )
+# Note: Exception handlers should be registered at the FastAPI app level, not router level

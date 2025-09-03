@@ -3,7 +3,7 @@
 from datetime import datetime, date
 from enum import Enum
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 
 
@@ -85,13 +85,15 @@ class RegulatoryStandard(BaseModel):
     url: Optional[str] = Field(None, description="Standard URL")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
-    @validator('price')
+    @field_validator('price')
+    @classmethod
     def validate_price(cls, v):
         if v is not None and v < 0:
             raise ValueError('Price must be non-negative')
         return v
 
-    @validator('pages')
+    @field_validator('pages')
+    @classmethod
     def validate_pages(cls, v):
         if v is not None and v <= 0:
             raise ValueError('Pages must be positive')
@@ -132,7 +134,8 @@ class ComplianceCheck(BaseModel):
     notes: Optional[str] = Field(None, description="Additional notes")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
-    @validator('score')
+    @field_validator('score')
+    @classmethod
     def validate_score(cls, v):
         if v is not None and not (0 <= v <= 1):
             raise ValueError('Score must be between 0 and 1')
@@ -204,7 +207,8 @@ class ComplianceReport(BaseModel):
     approval_date: Optional[date] = Field(None, description="Approval date")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
-    @validator('compliant_checks', 'non_compliant_checks')
+    @field_validator('compliant_checks', 'non_compliant_checks')
+    @classmethod
     def validate_check_counts(cls, v, values):
         if 'checks_performed' in values and v > values['checks_performed']:
             raise ValueError('Check counts cannot exceed total checks performed')
@@ -226,7 +230,7 @@ class RegulatoryQuery(BaseModel):
     limit: int = Field(default=100, ge=1, le=1000, description="Result limit")
     offset: int = Field(default=0, ge=0, description="Result offset")
     sort_by: Optional[str] = Field(None, description="Sort field")
-    sort_order: str = Field(default="asc", regex="^(asc|desc)$", description="Sort order")
+    sort_order: str = Field(default="asc", pattern="^(asc|desc)$", description="Sort order")
 
 
 class RegulatoryResponse(BaseModel):

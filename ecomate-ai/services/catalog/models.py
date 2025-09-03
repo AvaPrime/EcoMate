@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any, Union
 from decimal import Decimal
 from datetime import datetime
@@ -33,7 +33,8 @@ class ProductVariant(BaseModel):
     taxable: bool = True
     barcode: Optional[str] = None
     
-    @validator('price', 'compare_at_price', pre=True)
+    @field_validator('price', 'compare_at_price', mode='before')
+    @classmethod
     def parse_price(cls, v):
         if v is None:
             return None
@@ -137,7 +138,8 @@ class NormalizedProduct(BaseModel):
     taxable: bool = True
     tax_class: Optional[str] = None
     
-    @validator('price', 'compare_at_price', pre=True)
+    @field_validator('price', 'compare_at_price', mode='before')
+    @classmethod
     def parse_price(cls, v):
         if v is None:
             return None
@@ -148,7 +150,8 @@ class NormalizedProduct(BaseModel):
                 return None
         return Decimal(str(v))
     
-    @validator('images', pre=True)
+    @field_validator('images', mode='before')
+    @classmethod
     def parse_images(cls, v):
         if not v:
             return []
@@ -160,7 +163,8 @@ class NormalizedProduct(BaseModel):
                 images.append(ProductImage(src=img))
         return images
     
-    @validator('categories', pre=True)
+    @field_validator('categories', mode='before')
+    @classmethod
     def parse_categories(cls, v):
         if not v:
             return []
@@ -170,7 +174,8 @@ class NormalizedProduct(BaseModel):
                 categories.append(ProductCategory(**cat))
         return categories
     
-    @validator('variants', pre=True)
+    @field_validator('variants', mode='before')
+    @classmethod
     def parse_variants(cls, v):
         if not v:
             return []

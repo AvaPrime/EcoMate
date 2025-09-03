@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 from datetime import datetime, date
@@ -77,7 +77,8 @@ class ComplianceRule(BaseModel):
     expiry_date: Optional[date] = Field(None, description="Rule expiry date")
     tags: List[str] = Field(default_factory=list, description="Categorization tags")
     
-    @validator('rule_id')
+    @field_validator('rule_id')
+    @classmethod
     def validate_rule_id(cls, v):
         if not re.match(r'^[A-Z0-9_]+$', v):
             raise ValueError('Rule ID must contain only uppercase letters, numbers, and underscores')

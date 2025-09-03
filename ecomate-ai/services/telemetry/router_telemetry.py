@@ -82,7 +82,7 @@ async def query_telemetry_data(
     limit: int = Query(100, ge=1, le=10000, description="Maximum number of records to return"),
     offset: int = Query(0, ge=0, description="Number of records to skip"),
     order_by: str = Query("timestamp", description="Field to order by"),
-    order_direction: str = Query("desc", regex="^(asc|desc)$", description="Order direction")
+    order_direction: str = Query("desc", pattern="^(asc|desc)$", description="Order direction")
 ):
     """Query historical telemetry data for a system."""
     try:
@@ -165,7 +165,7 @@ async def update_system_baselines(
 async def get_system_alerts(
     system_id: str,
     active_only: bool = Query(True, description="Return only active alerts"),
-    severity_filter: Optional[str] = Query(None, regex="^(low|medium|high|critical)$", description="Filter by severity")
+    severity_filter: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$", description="Filter by severity")
 ):
     """Get alerts for a system."""
     try:

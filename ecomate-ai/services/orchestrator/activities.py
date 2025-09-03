@@ -1,4 +1,4 @@
-from services.utils.fetch import fetch_title
+from services.utils.fetch import fetch_url
 from services.utils.github_pr import open_pr
 
 async def activity_fetch_and_log(urls: list[str]) -> list[dict]:

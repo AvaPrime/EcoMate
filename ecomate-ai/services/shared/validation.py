@@ -2,7 +2,7 @@
 
 import re
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from fastapi import HTTPException, status
 from urllib.parse import urlparse
 import logging
@@ -99,11 +99,13 @@ class ValidatedResearchReq(BaseModel):
     query: str = Field(..., min_length=1, max_length=500)
     limit: int = Field(default=5, ge=1, le=20)
     
-    @validator('query')
+    @field_validator('query')
+    @classmethod
     def validate_query(cls, v):
         return SecurityValidator.validate_string_input(v, "query", 500)
     
-    @validator('limit')
+    @field_validator('limit')
+    @classmethod
     def validate_limit(cls, v):
         return SecurityValidator.validate_integer(v, "limit", 1, 20)
 
@@ -111,7 +113,8 @@ class ValidatedNewResearchReq(BaseModel):
     """Validated new research request model."""
     urls: List[str] = Field(..., min_items=1, max_items=10)
     
-    @validator('urls')
+    @field_validator('urls')
+    @classmethod
     def validate_urls(cls, v):
         if len(v) > 10:
             raise ValidationError("Maximum 10 URLs allowed", "urls")
@@ -127,7 +130,8 @@ class ValidatedPriceMonitorReq(BaseModel):
     """Validated price monitor request model."""
     create_pr: bool = Field(default=True)
     
-    @validator('create_pr')
+    @field_validator('create_pr')
+    @classmethod
     def validate_create_pr(cls, v):
         if not isinstance(v, bool):
             raise ValidationError("create_pr must be a boolean", "create_pr")

@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 # Enumerations
@@ -270,7 +270,7 @@ class Alert(BaseModel):
     title: str
     description: Optional[str] = None
     severity: AlertSeverity
-    status: str = Field(default="active", regex="^(active|acknowledged|resolved|suppressed)$")
+    status: str = Field(default="active", pattern="^(active|acknowledged|resolved|suppressed)$")
     triggered_at: datetime = Field(default_factory=datetime.utcnow)
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
@@ -294,7 +294,7 @@ class TransformationRule(BaseModel):
     description: Optional[str] = None
     input_field: str
     output_field: str
-    transformation_type: str = Field(..., regex="^(map|filter|aggregate|calculate|format)$")
+    transformation_type: str = Field(..., pattern="^(map|filter|aggregate|calculate|format)$")
     expression: str
     parameters: Dict[str, Any] = Field(default_factory=dict)
     enabled: bool = True
@@ -344,7 +344,7 @@ class Widget(BaseModel):
     """Dashboard widget."""
     widget_id: str = Field(default_factory=lambda: str(uuid4()))
     title: str
-    widget_type: str = Field(..., regex="^(chart|metric|alert|device_status|map)$")
+    widget_type: str = Field(..., pattern="^(chart|metric|alert|device_status|map)$")
     config: Dict[str, Any] = Field(default_factory=dict)
     chart: Optional[Chart] = None
     position: Dict[str, int] = Field(default_factory=dict)
@@ -410,7 +410,7 @@ class SecurityConfig(BaseModel):
 
 class StorageConfig(BaseModel):
     """Storage configuration."""
-    timeseries_db: str = Field(default="influxdb", regex="^(influxdb|timescaledb|prometheus)$")
+    timeseries_db: str = Field(default="influxdb", pattern="^(influxdb|timescaledb|prometheus)$")
     influxdb_url: Optional[str] = None
     influxdb_token: Optional[str] = None
     influxdb_org: Optional[str] = None
@@ -444,11 +444,12 @@ class IoTConfig(BaseModel):
     security: SecurityConfig
     storage: StorageConfig = Field(default_factory=StorageConfig)
     processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
-    log_level: str = Field(default="INFO", regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
+    log_level: str = Field(default="INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
     metrics_enabled: bool = True
     health_check_interval_seconds: int = Field(default=30, ge=5, le=300)
     
-    @validator('protocols')
+    @field_validator('protocols')
+    @classmethod
     def validate_protocols(cls, v):
         if not v:
             # Add default MQTT protocol if none specified
@@ -528,7 +529,7 @@ class QueryResponse(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Service health check response."""
-    status: str = Field(default="healthy", regex="^(healthy|degraded|unhealthy)$")
+    status: str = Field(default="healthy", pattern="^(healthy|degraded|unhealthy)$")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     version: str
     uptime_seconds: int

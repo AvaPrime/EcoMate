@@ -8,7 +8,7 @@ from datetime import datetime, date
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class WeatherProvider(str, Enum):
@@ -188,13 +188,15 @@ class ClimateStatistics(BaseModel):
     climate_zone: Optional[ClimateZone] = Field(None, description="Köppen climate classification")
     growing_season_days: Optional[int] = Field(None, ge=0, description="Growing season length in days")
     
-    @validator('temperature_monthly_means_c')
+    @field_validator('temperature_monthly_means_c')
+    @classmethod
     def validate_monthly_means(cls, v):
         if v is not None and len(v) != 12:
             raise ValueError('Monthly means must have exactly 12 values')
         return v
     
-    @validator('precipitation_monthly_totals_mm')
+    @field_validator('precipitation_monthly_totals_mm')
+    @classmethod
     def validate_monthly_precipitation(cls, v):
         if v is not None and len(v) != 12:
             raise ValueError('Monthly precipitation must have exactly 12 values')

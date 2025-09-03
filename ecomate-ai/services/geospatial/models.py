@@ -7,7 +7,7 @@ including Google Maps, elevation, slope, and soil data APIs.
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class CoordinateSystem(str, Enum):
@@ -88,7 +88,8 @@ class SlopeData(BaseModel):
     data_source: Optional[str] = Field(None)
     timestamp: Optional[datetime] = Field(None)
 
-    @validator('slope_percentage', pre=True, always=True)
+    @field_validator('slope_percentage', mode='before')
+    @classmethod
     def calculate_slope_percentage(cls, v, values):
         """Calculate slope percentage from degrees if not provided."""
         if v is None and 'slope_degrees' in values:

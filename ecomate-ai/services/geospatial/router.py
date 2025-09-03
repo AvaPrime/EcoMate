@@ -119,7 +119,7 @@ async def reverse_geocode_coordinates(
 async def get_elevation_data(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
-    source: str = Query("google", regex="^(google|usgs)$")
+    source: str = Query("google", pattern="^(google|usgs)$")
 ) -> Dict:
     """Get elevation data for coordinates.
     
