@@ -1,0 +1,21 @@
+# EcoMate Proposal — {{ client.name }}
+**Location:** {{ client.location or 'N/A' }}
+
+## System Specification
+- Type: {{ spec.type }}
+- Capacity (LPD): {{ spec.capacity_lpd or 'TBD' }}
+- Off‑grid: {{ 'Yes' if spec.offgrid else 'No' }}
+
+## Bill of Materials (BOM)
+| SKU | Description | Qty | Unit Price | Line Total |
+|---|---:|---:|---:|---:|
+{% for i in quote.bom %}| {{ i.sku }} | {{ i.description }} | {{ i.qty }} | {{ i.unit_price }} | {{ (i.qty * i.unit_price) | round(2) }} |
+{% endfor %}
+
+**Materials:** {{ quote.materials_subtotal }}  
+**Labour:** {{ quote.labour }}  
+**Logistics:** {{ quote.logistics }}  
+**Total (pre‑margin):** {{ quote.total_before_margin }}  
+**Quoted Total:** {{ quote.total_quote }}
+
+*Prepared by EcoMate.*

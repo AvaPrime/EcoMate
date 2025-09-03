@@ -2,8 +2,20 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from temporalio.client import Client
 import uuid
+from services.proposal.router_proposal import router as proposal_router
+from services.catalog.router_catalog import router as catalog_router
+from services.maintenance.router_maintenance import router as maintenance_router
+from services.compliance.router_compliance import router as compliance_router
+from services.telemetry.router_telemetry import router as telemetry_router
 
 app = FastAPI(title="EcoMate AI API")
+
+# Include routers
+app.include_router(proposal_router)
+app.include_router(catalog_router)
+app.include_router(maintenance_router)
+app.include_router(compliance_router)
+app.include_router(telemetry_router)
 
 class ResearchReq(BaseModel):
     query: str

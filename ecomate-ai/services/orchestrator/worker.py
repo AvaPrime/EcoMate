@@ -8,6 +8,16 @@ from services.orchestrator.model_router import ModelRouter
 from services.orchestrator import activities as acts
 from services.orchestrator import activities_price as price_acts
 from services.orchestrator import activities_research as research_acts
+from services.proposal.workflows_proposal import ProposalWorkflow
+from services.proposal.activities_proposal import activity_build_proposal
+from services.catalog.workflows_catalog import CatalogSyncWorkflow
+from services.catalog.activities_catalog import activity_catalog_sync
+from services.maintenance.workflows_maintenance import MaintenancePlanWorkflow
+from services.maintenance.activities_maintenance import activity_plan
+from services.compliance.workflows_compliance import ComplianceWorkflow
+from services.compliance.activities_compliance import activity_compliance
+from services.telemetry.workflows_alerts import TelemetryAlertWorkflow
+from services.telemetry.activities_alerts import activity_alerts
 from dotenv import load_dotenv
 import yaml
 
@@ -23,7 +33,7 @@ async def main():
     worker = Worker(
         client,
         task_queue="ecomate-ai",
-        workflows=[ResearchWorkflow, PriceMonitorWorkflow, ScheduledPriceMonitorWorkflow, NewResearchWorkflow],
+        workflows=[ResearchWorkflow, PriceMonitorWorkflow, ScheduledPriceMonitorWorkflow, NewResearchWorkflow, ProposalWorkflow, CatalogSyncWorkflow, MaintenancePlanWorkflow, ComplianceWorkflow, TelemetryAlertWorkflow],
         activities={
             "activity_llm_intro": activity_llm_intro,
             "activity_fetch_and_log": acts.activity_fetch_and_log,
@@ -34,6 +44,11 @@ async def main():
             "activity_crawl": research_acts.activity_crawl,
             "activity_struct_extract": research_acts.activity_struct_extract,
             "activity_write_and_pr": research_acts.activity_write_and_pr,
+            "activity_build_proposal": activity_build_proposal,
+            "activity_catalog_sync": activity_catalog_sync,
+            "activity_plan": activity_plan,
+            "activity_compliance": activity_compliance,
+            "activity_alerts": activity_alerts,
         },
     )
     print("Worker started on task-queue ecomate-ai")
