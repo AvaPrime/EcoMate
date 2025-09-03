@@ -51,6 +51,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add rate limiting middleware
+@app.middleware("http")
+async def add_rate_limiting(request: Request, call_next):
+    return await rate_limit_middleware(request, call_next)
+
+# Add request size validation middleware
+@app.middleware("http")
+async def validate_request_size_middleware(request: Request, call_next):
+    content_length = request.headers.get('content-length')
+    if content_length:
+        validate_request_size(int(content_length))
+    return await call_next(request)
+
 # Add request tracking middleware
 @app.middleware("http")
 async def request_tracking_middleware(request, call_next):
@@ -165,7 +178,7 @@ async def root():
         "timestamp": datetime.utcnow().isoformat()
     }
 
-# Request/Response models
+# Legacy models kept for backward compatibility (deprecated)
 class ResearchReq(BaseModel):
     query: str
     limit: int = 5
@@ -178,69 +191,79 @@ class NewResearchReq(BaseModel):
 
 @app.post("/run/research")
 @handle_exceptions
-async def run_research(req: ResearchReq):
-    urls = [
-        "https://www.example.com/",
-        "https://www.google.com/",
-        "https://en.wikipedia.org/wiki/Moving_bed_biofilm_reactor",
-    ][: req.limit]
-    client = await Client.connect("localhost:7233")
-    handle = await client.start_workflow(
-        "services.orchestrator.workflows.ResearchWorkflow.run",
-        req.query,
-        urls,
-        id=f"research-{req.query[:12]}",
-        task_queue="ecomate-ai",
-    )
-    res = await handle.result()
-    return res
+async def run_research(req: ValidatedResearchReq):
+    """Trigger research workflow with input validation"""
+    workflow_id = f"research-{uuid.uuid4()}"
+    
+    try:
+        client = await Client.connect("localhost:7233")
+        await client.start_workflow(
+            "services.orchestrator.workflows.ResearchWorkflow.run",
+            {"query": req.query, "limit": req.limit},
+            id=workflow_id,
+            task_queue="ecomate-ai"
+        )
+        response = {"workflow_id": workflow_id, "status": "started"}
+        return sanitize_output(response)
+    except Exception as e:
+        logger.error(f"Failed to start research workflow: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start workflow")
 
 @app.post("/run/new-research")
 @handle_exceptions
-async def run_new_research(req: NewResearchReq):
+async def run_new_research(req: ValidatedNewResearchReq):
     """Trigger new research workflow for crawling and extracting supplier/parts data."""
-    client = await Client.connect("localhost:7233")
-    workflow_id = f"new-research-{uuid.uuid4().hex[:8]}"
+    workflow_id = f"new-research-{uuid.uuid4()}"
     
-    handle = await client.start_workflow(
-        "services.orchestrator.research_workflows.ResearchWorkflow.run",
-        req.urls,
-        id=workflow_id,
-        task_queue="ecomate-ai",
-    )
-    
-    res = await handle.result()
-    return res
+    try:
+        client = await Client.connect("localhost:7233")
+        await client.start_workflow(
+            "services.orchestrator.workflows.NewResearchWorkflow.run",
+            req.urls,
+            id=workflow_id,
+            task_queue="ecomate-ai"
+        )
+        response = {"workflow_id": workflow_id, "status": "started"}
+        return sanitize_output(response)
+    except Exception as e:
+        logger.error(f"Failed to start new research workflow: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start workflow")
 
 @app.post("/run/price-monitor")
 @handle_exceptions
-async def run_price_monitor(req: PriceMonitorReq):
+async def run_price_monitor(req: ValidatedPriceMonitorReq):
     """Trigger price monitoring workflow."""
-    client = await Client.connect("localhost:7233")
-    workflow_id = f"price-monitor-{uuid.uuid4().hex[:8]}"
+    workflow_id = f"price-monitor-{uuid.uuid4()}"
     
-    handle = await client.start_workflow(
-        "services.orchestrator.price_workflows.PriceMonitorWorkflow.run",
-        req.create_pr,
-        id=workflow_id,
-        task_queue="ecomate-ai",
-    )
-    
-    res = await handle.result()
-    return res
+    try:
+        client = await Client.connect("localhost:7233")
+        await client.start_workflow(
+            "services.orchestrator.workflows.PriceMonitorWorkflow.run",
+            req.create_pr,
+            id=workflow_id,
+            task_queue="ecomate-ai"
+        )
+        response = {"workflow_id": workflow_id, "status": "started"}
+        return sanitize_output(response)
+    except Exception as e:
+        logger.error(f"Failed to start price monitor workflow: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start workflow")
 
 @app.post("/run/scheduled-price-monitor")
 @handle_exceptions
 async def run_scheduled_price_monitor():
     """Trigger scheduled price monitoring workflow (always creates PR)."""
-    client = await Client.connect("localhost:7233")
-    workflow_id = f"scheduled-price-monitor-{uuid.uuid4().hex[:8]}"
+    workflow_id = f"scheduled-price-monitor-{uuid.uuid4()}"
     
-    handle = await client.start_workflow(
-        "services.orchestrator.price_workflows.ScheduledPriceMonitorWorkflow.run",
-        id=workflow_id,
-        task_queue="ecomate-ai",
-    )
-    
-    res = await handle.result()
-    return res
+    try:
+        client = await Client.connect("localhost:7233")
+        await client.start_workflow(
+            "services.orchestrator.price_workflows.ScheduledPriceMonitorWorkflow.run",
+            id=workflow_id,
+            task_queue="ecomate-ai"
+        )
+        response = {"workflow_id": workflow_id, "status": "started"}
+        return sanitize_output(response)
+    except Exception as e:
+        logger.error(f"Failed to start scheduled price monitor workflow: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start workflow")
