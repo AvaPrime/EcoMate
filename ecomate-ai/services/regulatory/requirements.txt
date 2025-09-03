@@ -1,0 +1,213 @@
+# Regulatory Monitor Service Dependencies
+
+# Core framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# HTTP client and async support
+aiohttp>=3.9.0
+httpx>=0.25.0
+aiofiles>=23.2.0
+
+# Data validation and serialization
+pydantic[email]>=2.5.0
+typing-extensions>=4.8.0
+
+# Date and time handling
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# Caching and performance
+redis>=5.0.0
+aioredis>=2.0.1
+cachetools>=5.3.0
+
+# Database support (optional)
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+psycopg2-binary>=2.9.0  # PostgreSQL
+
+# Logging and monitoring
+structlog>=23.2.0
+prometheus-client>=0.19.0
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+
+# Security and authentication
+cryptography>=41.0.0
+pyjwt>=2.8.0
+passlib[bcrypt]>=1.7.4
+
+# Configuration management
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+toml>=0.10.2
+
+# Testing dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+factory-boy>=3.3.0
+faker>=20.1.0
+
+# Development tools
+black>=23.11.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.7.0
+pre-commit>=3.6.0
+
+# Documentation
+sphinx>=7.2.0
+sphinx-rtd-theme>=1.3.0
+mkdocs>=1.5.0
+mkdocs-material>=9.4.0
+
+# API documentation
+sphinx-autoapi>=3.0.0
+redoc-cli>=0.13.0
+
+# Utilities
+click>=8.1.0
+rich>=13.7.0
+tqdm>=4.66.0
+requests>=2.31.0
+
+# Standards body specific dependencies
+beautifulsoup4>=4.12.0  # For web scraping standards
+lxml>=4.9.0  # XML parsing
+feedparser>=6.0.10  # RSS/Atom feeds
+
+# Data processing
+pandas>=2.1.0  # Data analysis (optional)
+numpy>=1.24.0  # Numerical computing (optional)
+
+# Async task queue (optional)
+celery>=5.3.0
+redis>=5.0.0  # Message broker
+
+# Monitoring and alerting
+slack-sdk>=3.26.0  # Slack notifications
+twilio>=8.10.0  # SMS notifications
+sendgrid>=6.10.0  # Email notifications
+
+# File format support
+openpyxl>=3.1.0  # Excel files
+pdfplumber>=0.9.0  # PDF parsing
+python-docx>=1.1.0  # Word documents
+
+# Network and security
+certifi>=2023.11.17
+urllib3>=2.1.0
+chardet>=5.2.0
+
+# Environment-specific dependencies
+# Development
+pytest-xdist>=3.5.0  # Parallel testing
+pytest-benchmark>=4.0.0  # Performance testing
+memory-profiler>=0.61.0  # Memory profiling
+
+# Production
+gunicorn>=21.2.0  # WSGI server
+gevent>=23.9.0  # Async support
+psutil>=5.9.0  # System monitoring
+
+# Optional integrations
+# Elasticsearch for search
+elasticsearch>=8.11.0
+elasticsearch-dsl>=8.11.0
+
+# Message queues
+kafka-python>=2.0.2
+pika>=1.3.0  # RabbitMQ
+
+# Cloud services
+boto3>=1.34.0  # AWS
+azure-storage-blob>=12.19.0  # Azure
+google-cloud-storage>=2.10.0  # GCP
+
+# API rate limiting
+slowapi>=0.1.9
+limits>=3.6.0
+
+# Health checks
+healthcheck>=1.3.3
+
+# Configuration validation
+cerberus>=1.3.5
+voluptuous>=0.14.1
+
+# Retry mechanisms
+tenacity>=8.2.0
+backoff>=2.2.1
+
+# JSON schema validation
+jsonschema>=4.20.0
+
+# Time zone handling
+tzdata>=2023.3
+
+# Async utilities
+anyio>=4.2.0
+trio>=0.23.0
+
+# Performance monitoring
+py-spy>=0.3.14
+memray>=1.10.0
+
+# Code quality
+bandit>=1.7.5  # Security linting
+safety>=2.3.0  # Dependency vulnerability scanning
+
+# API client generation
+openapi-generator-cli>=7.1.0
+
+# Data serialization
+msgpack>=1.0.7
+orjson>=3.9.0  # Fast JSON
+
+# Compression
+zstandard>=0.22.0
+lz4>=4.3.0
+
+# Cryptographic utilities
+nacl>=1.5.0
+cryptodome>=3.19.0
+
+# Network protocols
+websockets>=12.0
+sseclient-py>=1.8.0  # Server-sent events
+
+# Template engines (for reports)
+jinja2>=3.1.0
+markupsafe>=2.1.0
+
+# Image processing (for report generation)
+Pillow>=10.1.0
+reportlab>=4.0.0  # PDF generation
+
+# Workflow and state management
+statemachine>=2.1.0
+
+# Internationalization
+babel>=2.14.0
+
+# Version constraints for compatibility
+# Ensure compatibility with Python 3.9+
+typing-extensions>=4.8.0; python_version<"3.11"
+importlib-metadata>=6.8.0; python_version<"3.10"
+
+# Pin critical dependencies to avoid breaking changes
+fastapi>=0.104.0,<1.0.0
+pydantic>=2.5.0,<3.0.0
+sqlalchemy>=2.0.0,<3.0.0
+
+# Development and testing only
+# These should be in a separate dev-requirements.txt in production
+# pytest-sugar>=0.9.7
+# pytest-clarity>=1.0.1
+# pytest-randomly>=3.15.0
+# pytest-timeout>=2.2.0
