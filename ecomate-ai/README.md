@@ -287,12 +287,20 @@ ollama pull llama2
 ollama pull codellama
 ```
 
-**Google Vertex AI**:
+**Google Services**:
+
+*Google Vertex AI*:
 1. Create GCP project
 2. Enable Vertex AI API
 3. Create service account with AI Platform permissions
 4. Download service account key
 5. Set `GOOGLE_APPLICATION_CREDENTIALS` environment variable
+
+*Google Maps API*:
+1. Enable Google Maps Platform APIs (Geocoding, Distance Matrix, Elevation)
+2. Create API key in Google Cloud Console
+3. Set `GOOGLE_API_KEY` in your `.env` file
+4. Configure API key restrictions for security
 
 ## Usage Instructions
 

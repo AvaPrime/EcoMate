@@ -56,7 +56,12 @@ cd ecomate-ai
 
 # Copy environment template
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration, including:
+# - Database connection settings (PostgreSQL)
+# - AI model configurations (Ollama, Vertex AI, etc.)
+# - GOOGLE_API_KEY for Google Maps Platform services (geocoding, distance, elevation)
+# - GitHub token for repository operations
+# - E-commerce platform credentials (if applicable)
 
 # Start infrastructure
 docker compose up -d postgres minio temporal nats
