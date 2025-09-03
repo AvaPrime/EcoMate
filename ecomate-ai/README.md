@@ -17,12 +17,16 @@ Agent services for EcoMate: research, supplier sync, price monitor, spec draftin
 
 ### Purpose and Objectives
 
-EcoMate AI is an intelligent automation platform designed to streamline environmental technology research, supplier management, and compliance monitoring. The system provides:
+EcoMate AI is an intelligent automation platform designed to streamline environmental technology research, supplier management, compliance monitoring, and business operations. The system provides:
 
 - **Automated Research**: Web crawling and data extraction for environmental technology suppliers and products with intelligent content parsing
 - **Price Monitoring**: Continuous tracking of product prices with deviation alerts, automated reporting, and GitHub integration
 - **Vendor-Specific Parsing**: Specialized parsers for pump and UV reactor specifications with intelligent fallback to LLM processing
-- **Compliance Management**: Automated spec drafting and compliance checks for environmental systems
+- **Proposal & Computation**: Automated generation of technical proposals and cost calculations for environmental systems
+- **E-commerce Integration**: Seamless catalog synchronization with Shopify, WooCommerce, and Medusa platforms
+- **Maintenance Scheduling**: Predictive maintenance planning and automated scheduling for environmental equipment
+- **Compliance Management**: Automated spec drafting and compliance checks for environmental systems with regulatory rule validation
+- **Telemetry & Alerts**: Real-time system monitoring with intelligent alerting and digital twin lite functionality
 - **Documentation Automation**: Automated PR creation and documentation updates with version control integration
 - **Workflow Orchestration**: Reliable, fault-tolerant execution of complex business processes using Temporal
 
@@ -38,6 +42,11 @@ EcoMate AI is an intelligent automation platform designed to streamline environm
 - **Research Workflows**: Automated crawling, parsing, and data extraction from supplier websites
 - **Price Monitoring**: Scheduled price tracking with configurable deviation thresholds and alert systems
 - **Vendor Parsers**: Domain-specific parsers for pumps and UV reactors with structured data extraction
+- **Proposal Generation**: Automated technical proposal creation with cost calculations and template management
+- **E-commerce Catalog Management**: Multi-platform product synchronization and inventory management
+- **Maintenance Planning**: Predictive maintenance scheduling with equipment lifecycle tracking
+- **Compliance Validation**: Automated regulatory compliance checks with customizable rule engines
+- **Telemetry Processing**: Real-time system monitoring with intelligent alerting and anomaly detection
 - **LLM Integration**: Fallback processing using Ollama and Google Vertex AI models with context-aware prompts
 - **Document Management**: MinIO-based artifact storage and GitHub integration for documentation
 
@@ -152,6 +161,31 @@ PARSER_STRICT=false
 DEFAULT_CURRENCY=USD
 CURRENCY_DEFAULT=ZAR
 PRICE_DEVIATION_ALERT=0.10
+
+# E-commerce Integration
+SHOPIFY_API_KEY=your_shopify_api_key
+SHOPIFY_API_SECRET=your_shopify_secret
+SHOPIFY_WEBHOOK_SECRET=your_webhook_secret
+WOOCOMMERCE_CONSUMER_KEY=your_woocommerce_key
+WOOCOMMERCE_CONSUMER_SECRET=your_woocommerce_secret
+MEDUSA_API_KEY=your_medusa_api_key
+MEDUSA_BASE_URL=http://localhost:9000
+
+# Proposal Service
+PROPOSAL_TEMPLATE_PATH=./services/proposal/templates
+PROPOSAL_DEFAULT_MARGIN=0.15
+PROPOSAL_CURRENCY=USD
+
+# Maintenance Service
+MAINTENANCE_SCHEDULE_PATH=./data/maintenance_schedule.csv
+MAINTENANCE_DEFAULT_INTERVAL=90
+MAINTENANCE_ALERT_DAYS=7
+
+# Compliance Service
+COMPLIANCE_RULES_PATH=./services/compliance/rules
+
+# Telemetry Service
+TELEMETRY_ALERT_HEADROOM=0.10
 ```
 
 #### 3. Infrastructure Services
@@ -178,13 +212,51 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-#### 5. Service Startup
+#### 5. Service Dependencies Setup
+
+**E-commerce Platform Configuration**:
+- **Shopify**: Create private app and obtain API credentials
+- **WooCommerce**: Generate consumer key/secret from WooCommerce > Settings > Advanced > REST API
+- **Medusa**: Set up Medusa server and obtain API key
+
+**Compliance Rules Setup**:
 ```bash
-# Terminal 1: Start Temporal worker
+# Create compliance rules directory
+mkdir -p services/compliance/rules
+
+# Copy default rules (if available)
+cp data/compliance_rules/* services/compliance/rules/
+```
+
+**Proposal Templates Setup**:
+```bash
+# Create proposal templates directory
+mkdir -p services/proposal/templates
+
+# Copy default templates (if available)
+cp data/proposal_templates/* services/proposal/templates/
+```
+
+#### 6. Service Startup
+```bash
+# Terminal 1: Start Temporal worker (includes all new workflows)
 python services/orchestrator/worker.py
 
-# Terminal 2: Start API server
+# Terminal 2: Start API server (includes all new endpoints)
 uvicorn services.api.main:app --reload --port 8080
+```
+
+**Service Health Verification**:
+```bash
+# Test core services
+curl http://localhost:8080/health
+
+# Test new service endpoints
+curl -X POST http://localhost:8080/proposal/generate -H "Content-Type: application/json" -d '{"project_name":"test"}'
+curl -X POST http://localhost:8080/catalog/sync -H "Content-Type: application/json" -d '{"platform":"shopify"}'
+curl -X POST http://localhost:8080/maintenance/schedule -H "Content-Type: application/json" -d '{"equipment_id":"test"}'
+curl -X POST http://localhost:8080/compliance/check -H "Content-Type: application/json" -d '{"system_specs":{}}'
+curl -X POST http://localhost:8080/telemetry/ingest -H "Content-Type: application/json" -d '{"system_id":"test","metrics":{}}'
 ```
 
 ### Configuration Details
@@ -334,6 +406,181 @@ When vendor parsers fail or find insufficient data, the system automatically fal
 4. Vector database enables semantic search
 5. Comparative analysis reports generated
 
+### New Service Workflows
+
+#### 4. Proposal & Computation Service
+**Scenario**: Generate technical proposals with cost calculations
+
+```bash
+# Generate proposal for water treatment system
+curl -X POST 'http://localhost:8080/run/proposal' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "project_requirements": {
+      "flow_rate": "100 m3/h",
+      "treatment_type": "MBBR",
+      "location": "Cape Town, South Africa",
+      "budget_range": "50000-100000 USD"
+    },
+    "include_calculations": true,
+    "format": "pdf"
+  }'
+```
+
+**Process**:
+1. Analyze project requirements and constraints
+2. Query product database for suitable equipment
+3. Perform engineering calculations (sizing, capacity)
+4. Generate cost estimates with supplier pricing
+5. Create formatted proposal document
+6. Store proposal data for future reference
+
+#### 5. E-commerce Catalog Integration
+**Scenario**: Sync product data with e-commerce platforms
+
+```bash
+# Sync products to Shopify store
+curl -X POST 'http://localhost:8080/run/catalog-sync' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "platform": "shopify",
+    "store_url": "https://mystore.myshopify.com",
+    "product_categories": ["pumps", "uv-systems"],
+    "sync_mode": "incremental"
+  }'
+
+# Update WooCommerce inventory
+curl -X POST 'http://localhost:8080/run/inventory-update' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "platform": "woocommerce",
+    "site_url": "https://mysite.com",
+    "update_stock": true,
+    "update_pricing": true
+  }'
+```
+
+**Process**:
+1. Connect to configured e-commerce platform APIs
+2. Map internal product data to platform schemas
+3. Sync product information, pricing, and inventory
+4. Handle platform-specific requirements and limitations
+5. Generate sync reports and error logs
+6. Schedule automated sync workflows
+
+#### 6. Maintenance Scheduling
+**Scenario**: Schedule and track equipment maintenance
+
+```bash
+# Schedule maintenance for installed equipment
+curl -X POST 'http://localhost:8080/run/schedule-maintenance' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "equipment_id": "PUMP-001",
+    "maintenance_type": "preventive",
+    "schedule": {
+      "frequency": "quarterly",
+      "next_date": "2024-04-01"
+    },
+    "technician_assignment": "auto"
+  }'
+
+# Get maintenance schedule
+curl -X GET 'http://localhost:8080/maintenance/schedule?month=2024-03'
+```
+
+**Process**:
+1. Analyze equipment specifications and usage patterns
+2. Calculate optimal maintenance intervals
+3. Schedule maintenance tasks in calendar system
+4. Assign technicians based on expertise and availability
+5. Generate maintenance checklists and procedures
+6. Track completion status and generate reports
+
+#### 7. Compliance Management
+**Scenario**: Monitor regulatory compliance and certifications
+
+```bash
+# Check compliance status for products
+curl -X POST 'http://localhost:8080/run/compliance-check' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "product_ids": ["PUMP-001", "UV-002"],
+    "regulations": ["SANS", "ISO", "CE"],
+    "market": "south_africa"
+  }'
+
+# Generate compliance report
+curl -X POST 'http://localhost:8080/run/compliance-report' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "report_type": "certification_status",
+    "date_range": "2024-Q1",
+    "format": "pdf"
+  }'
+```
+
+**Process**:
+1. Cross-reference product specifications with regulations
+2. Check certification validity and expiration dates
+3. Identify compliance gaps and requirements
+4. Generate compliance reports and recommendations
+5. Track regulatory updates and changes
+6. Alert stakeholders of compliance issues
+
+#### 8. Telemetry & Alerts System
+**Scenario**: Monitor system health and performance metrics
+
+```bash
+# Configure monitoring alerts
+curl -X POST 'http://localhost:8080/telemetry/alerts' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "alert_type": "performance",
+    "metric": "response_time",
+    "threshold": 5000,
+    "notification_channels": ["email", "slack"]
+  }'
+
+# Get system metrics
+curl -X GET 'http://localhost:8080/telemetry/metrics?timerange=1h'
+```
+
+**Process**:
+1. Collect system performance and health metrics
+2. Monitor API response times and error rates
+3. Track resource utilization (CPU, memory, storage)
+4. Analyze workflow execution patterns
+5. Generate alerts for anomalies and thresholds
+6. Provide dashboards for real-time monitoring
+
+### Integration Examples
+
+#### Multi-Service Workflow
+**Scenario**: Complete project lifecycle from research to delivery
+
+```bash
+# 1. Research suppliers for project requirements
+curl -X POST 'http://localhost:8080/run/research' \
+  -d '{"query": "MBBR systems 500m3/day South Africa", "limit": 10}'
+
+# 2. Generate technical proposal
+curl -X POST 'http://localhost:8080/run/proposal' \
+  -d '{"project_requirements": {...}, "include_calculations": true}'
+
+# 3. Check compliance requirements
+curl -X POST 'http://localhost:8080/run/compliance-check' \
+  -d '{"product_ids": [...], "regulations": ["SANS"], "market": "south_africa"}'
+
+# 4. Schedule installation and maintenance
+curl -X POST 'http://localhost:8080/run/schedule-maintenance' \
+  -d '{"equipment_id": "...", "maintenance_type": "installation"}'
+
+# 5. Sync to e-commerce platform
+curl -X POST 'http://localhost:8080/run/catalog-sync' \
+  -d '{"platform": "shopify", "product_categories": [...]}'
+```
+
 ## API Documentation
 
 ### Endpoint Specifications
@@ -438,6 +685,195 @@ curl -X POST 'http://localhost:8080/run/research' \
 }
 ```
 
+#### Proposal & Computation Endpoints
+
+**POST /proposal/generate**
+- **Purpose**: Generate technical proposals with cost calculations
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "project_name": "string",
+    "requirements": {
+      "flow_rate": "number",
+      "treatment_type": "string",
+      "budget_range": "string"
+    },
+    "template_id": "string"  // Optional: specific template to use
+  }
+  ```
+- **Response**: Generated proposal with cost breakdown and technical specifications
+- **Status Codes**: `200`: Success, `400`: Invalid parameters, `500`: Generation error
+
+#### E-commerce Catalog Endpoints
+
+**POST /catalog/sync**
+- **Purpose**: Synchronize product catalog with e-commerce platforms
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "platform": "shopify|woocommerce|medusa",
+    "store_config": {
+      "api_key": "string",
+      "store_url": "string",
+      "webhook_secret": "string"
+    },
+    "sync_options": {
+      "full_sync": "boolean",
+      "categories": ["string"]
+    }
+  }
+  ```
+- **Response**: Synchronization results with product counts and status
+- **Status Codes**: `200`: Success, `401`: Authentication failed, `500`: Sync error
+
+#### Maintenance Scheduling Endpoints
+
+**POST /maintenance/schedule**
+- **Purpose**: Create predictive maintenance schedules
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "equipment_id": "string",
+    "equipment_type": "string",
+    "installation_date": "ISO8601",
+    "operating_hours": "number",
+    "maintenance_type": "preventive|predictive|corrective"
+  }
+  ```
+- **Response**: Generated maintenance schedule with recommended intervals
+- **Status Codes**: `200`: Success, `404`: Equipment not found, `500`: Scheduling error
+
+**GET /maintenance/plan/{equipment_id}**
+- **Purpose**: Retrieve maintenance plan for specific equipment
+- **Response**: Detailed maintenance schedule and history
+
+#### Compliance Management Endpoints
+
+**POST /compliance/check**
+- **Purpose**: Validate system specifications against regulatory requirements
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "system_specs": {
+      "flow_rate": "number",
+      "treatment_efficiency": "number",
+      "discharge_quality": "object"
+    },
+    "regulations": ["string"],  // Regulatory frameworks to check
+    "jurisdiction": "string"
+  }
+  ```
+- **Response**: Compliance status with detailed validation results
+- **Status Codes**: `200`: Success, `400`: Invalid specs, `500`: Validation error
+
+#### Telemetry & Alerts Endpoints
+
+**POST /telemetry/ingest**
+- **Purpose**: Ingest real-time system telemetry data
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "system_id": "string",
+    "metrics": {
+      "flow_rate": "number",
+      "pressure": "number",
+      "temperature": "number",
+      "power_consumption": "number",
+      "efficiency": "number"
+    },
+    "timestamp": "ISO8601"
+  }
+  ```
+- **Response**: Processing confirmation and alert status
+- **Status Codes**: `200`: Success, `400`: Invalid data, `500`: Processing error
+
+### Request/Response Examples for New Services
+
+#### Proposal Generation Example
+```bash
+curl -X POST 'http://localhost:8080/proposal/generate' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "project_name": "Municipal Wastewater Treatment Upgrade",
+    "requirements": {
+      "flow_rate": 1000,
+      "treatment_type": "biological",
+      "budget_range": "500000-750000"
+    }
+  }'
+```
+
+#### Catalog Sync Example
+```bash
+curl -X POST 'http://localhost:8080/catalog/sync' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "platform": "shopify",
+    "store_config": {
+      "api_key": "your-api-key",
+      "store_url": "your-store.myshopify.com"
+    },
+    "sync_options": {
+      "full_sync": true,
+      "categories": ["pumps", "filters"]
+    }
+  }'
+```
+
+#### Maintenance Schedule Example
+```bash
+curl -X POST 'http://localhost:8080/maintenance/schedule' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "equipment_id": "pump-001",
+    "equipment_type": "submersible_pump",
+    "installation_date": "2024-01-15T00:00:00Z",
+    "operating_hours": 2400,
+    "maintenance_type": "predictive"
+  }'
+```
+
+#### Compliance Check Example
+```bash
+curl -X POST 'http://localhost:8080/compliance/check' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "system_specs": {
+      "flow_rate": 500,
+      "treatment_efficiency": 0.95,
+      "discharge_quality": {
+        "bod": 10,
+        "tss": 15,
+        "ph": 7.2
+      }
+    },
+    "regulations": ["EPA_NPDES", "LOCAL_DISCHARGE"],
+    "jurisdiction": "US_CA"
+  }'
+```
+
+#### Telemetry Ingestion Example
+```bash
+curl -X POST 'http://localhost:8080/telemetry/ingest' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "system_id": "plant-001",
+    "metrics": {
+      "flow_rate": 450.5,
+      "pressure": 2.3,
+      "temperature": 22.1,
+      "power_consumption": 15.2,
+      "efficiency": 0.92
+    },
+    "timestamp": "2024-01-15T10:30:00Z"
+  }'
+```
+
 ### Authentication Requirements
 
 #### Internal Services
@@ -504,6 +940,167 @@ docker compose up -d postgres
 
 # Wait for initialization
 sleep 30
+```
+
+#### New Services Troubleshooting
+
+**🔴 Proposal Generation Service Issues**
+
+*Issue: Proposal generation fails with calculation errors*
+```
+Error: Unable to calculate system sizing for given parameters
+```
+**Solution**:
+1. Verify project requirements format in request body
+2. Check unit conversion settings in environment variables
+3. Validate equipment database has required specifications
+4. Review calculation engine logs: `docker compose logs proposal-service`
+
+*Issue: PDF generation timeout*
+```
+Error: Proposal PDF generation timed out after 30 seconds
+```
+**Solution**:
+1. Increase PDF generation timeout in configuration
+2. Optimize proposal template complexity
+3. Check WeasyPrint dependencies: `pip list | grep weasyprint`
+4. Monitor memory usage during PDF generation
+
+**🔴 E-commerce Integration Issues**
+
+*Issue: Shopify API authentication failed*
+```
+Error: 401 Unauthorized - Invalid API credentials
+```
+**Solution**:
+1. Verify Shopify API credentials in `.env`
+2. Check API permissions and scopes
+3. Regenerate API tokens if expired
+4. Test connection: `curl -H "X-Shopify-Access-Token: TOKEN" https://SHOP.myshopify.com/admin/api/2023-10/shop.json`
+
+*Issue: Product sync conflicts*
+```
+Warning: Product SKU conflicts detected during sync
+```
+**Solution**:
+1. Review product mapping configuration
+2. Implement conflict resolution strategy
+3. Check for duplicate SKUs in source data
+4. Use incremental sync mode to avoid conflicts
+
+**🔴 Maintenance Scheduler Issues**
+
+*Issue: Calendar integration not working*
+```
+Error: Failed to connect to CalDAV server
+```
+**Solution**:
+1. Verify CalDAV server URL and credentials
+2. Check network connectivity to calendar server
+3. Test CalDAV connection manually
+4. Review calendar integration logs
+
+*Issue: Maintenance notifications not sent*
+```
+Warning: Failed to send maintenance reminder notifications
+```
+**Solution**:
+1. Check notification channel configuration
+2. Verify SMTP/Slack webhook settings
+3. Test notification channels individually
+4. Review notification service logs
+
+**🔴 Compliance Management Issues**
+
+*Issue: Regulation database out of date*
+```
+Warning: Regulation data is older than 30 days
+```
+**Solution**:
+1. Update regulation database manually
+2. Check automated update schedule
+3. Verify external API connectivity
+4. Review regulation update logs
+
+*Issue: Certification validation errors*
+```
+Error: Unable to validate certification status
+```
+**Solution**:
+1. Check certification database integrity
+2. Verify certification authority APIs
+3. Update certification validation rules
+4. Review compliance check logs
+
+**🔴 Telemetry & Alerts Issues**
+
+*Issue: Metrics not being collected*
+```
+Error: Prometheus metrics endpoint unreachable
+```
+**Solution**:
+1. Verify Prometheus configuration
+2. Check metrics endpoint accessibility
+3. Review metric collection intervals
+4. Test metrics endpoint: `curl http://localhost:8080/metrics`
+
+*Issue: Alert notifications not working*
+```
+Error: Failed to send alert to configured channels
+```
+**Solution**:
+1. Check alert channel configuration
+2. Verify webhook URLs and API keys
+3. Test alert channels individually
+4. Review alert manager logs
+
+#### Service-Specific Diagnostics
+
+**Proposal Service Health Check**:
+```bash
+# Test proposal generation
+curl -X POST 'http://localhost:8080/run/proposal' \
+  -H 'Content-Type: application/json' \
+  -d '{"project_requirements": {"flow_rate": "100 m3/h", "treatment_type": "MBBR"}}'
+
+# Check calculation engine
+curl http://localhost:8080/proposal/health
+```
+
+**E-commerce Service Health Check**:
+```bash
+# Test platform connectivity
+curl -X GET 'http://localhost:8080/catalog/platforms'
+
+# Verify sync status
+curl -X GET 'http://localhost:8080/catalog/sync-status'
+```
+
+**Maintenance Service Health Check**:
+```bash
+# Test scheduling functionality
+curl -X GET 'http://localhost:8080/maintenance/health'
+
+# Check calendar integration
+curl -X GET 'http://localhost:8080/maintenance/calendar-status'
+```
+
+**Compliance Service Health Check**:
+```bash
+# Test compliance checking
+curl -X GET 'http://localhost:8080/compliance/health'
+
+# Verify regulation database
+curl -X GET 'http://localhost:8080/compliance/regulations/status'
+```
+
+**Telemetry Service Health Check**:
+```bash
+# Test metrics collection
+curl -X GET 'http://localhost:8080/telemetry/health'
+
+# Check alert system
+curl -X GET 'http://localhost:8080/telemetry/alerts/status'
 ```
 
 ## Maintenance Guide
@@ -680,10 +1277,455 @@ pytest -v -s tests/
 export LOG_LEVEL=DEBUG
 
 # Run with debugger
-python -m pdb services/api/main.py
+python -m pdb services.api.main.py
 
 # Profile performance
 python -m cProfile -o profile.stats services/parsers/_demo_test.py
+```
+
+### New Services Testing Procedures
+
+#### 🧪 Proposal & Computation Service Testing
+
+**Unit Tests**:
+```bash
+# Test calculation engine
+pytest tests/unit/test_proposal_calculations.py -v
+
+# Test PDF generation
+pytest tests/unit/test_proposal_pdf.py -v
+
+# Test template rendering
+pytest tests/unit/test_proposal_templates.py -v
+```
+
+**Integration Tests**:
+```bash
+# Test complete proposal workflow
+pytest tests/integration/test_proposal_workflow.py -v
+
+# Test API endpoints
+pytest tests/integration/test_proposal_api.py -v
+```
+
+**Manual Testing**:
+```bash
+# Test proposal generation with sample data
+curl -X POST 'http://localhost:8080/run/proposal' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "project_name": "Test WWTP",
+    "requirements": {
+      "flow_rate": 500,
+      "treatment_type": "MBBR",
+      "budget_range": "200000-300000"
+    },
+    "include_calculations": true,
+    "generate_pdf": true
+  }'
+
+# Verify calculation accuracy
+python tests/manual/verify_calculations.py
+
+# Test PDF output quality
+python tests/manual/check_pdf_generation.py
+```
+
+#### 🛒 E-commerce Catalog Service Testing
+
+**Unit Tests**:
+```bash
+# Test platform connectors
+pytest tests/unit/test_shopify_connector.py -v
+pytest tests/unit/test_woocommerce_connector.py -v
+pytest tests/unit/test_medusa_connector.py -v
+
+# Test product mapping
+pytest tests/unit/test_product_mapping.py -v
+
+# Test inventory sync
+pytest tests/unit/test_inventory_sync.py -v
+```
+
+**Integration Tests**:
+```bash
+# Test complete sync workflow
+pytest tests/integration/test_catalog_sync.py -v
+
+# Test conflict resolution
+pytest tests/integration/test_sync_conflicts.py -v
+```
+
+**Manual Testing**:
+```bash
+# Test Shopify integration
+curl -X POST 'http://localhost:8080/catalog/sync' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "platform": "shopify",
+    "store_config": {
+      "api_key": "test-key",
+      "store_url": "test-store.myshopify.com"
+    },
+    "sync_options": {
+      "dry_run": true,
+      "categories": ["pumps"]
+    }
+  }'
+
+# Test product mapping accuracy
+python tests/manual/verify_product_mapping.py
+
+# Test sync performance
+python tests/manual/benchmark_sync_speed.py
+```
+
+#### 🔧 Maintenance Scheduler Testing
+
+**Unit Tests**:
+```bash
+# Test scheduling algorithms
+pytest tests/unit/test_maintenance_algorithms.py -v
+
+# Test calendar integration
+pytest tests/unit/test_calendar_integration.py -v
+
+# Test notification system
+pytest tests/unit/test_maintenance_notifications.py -v
+```
+
+**Integration Tests**:
+```bash
+# Test complete scheduling workflow
+pytest tests/integration/test_maintenance_workflow.py -v
+
+# Test external calendar sync
+pytest tests/integration/test_calendar_sync.py -v
+```
+
+**Manual Testing**:
+```bash
+# Test maintenance scheduling
+curl -X POST 'http://localhost:8080/maintenance/schedule' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "equipment_id": "PUMP-001",
+    "equipment_type": "centrifugal_pump",
+    "installation_date": "2024-01-15",
+    "operating_hours": 2000,
+    "maintenance_type": "predictive"
+  }'
+
+# Test calendar integration
+python tests/manual/test_calendar_sync.py
+
+# Verify notification delivery
+python tests/manual/test_notifications.py
+```
+
+#### ✅ Compliance Management Testing
+
+**Unit Tests**:
+```bash
+# Test regulation parsing
+pytest tests/unit/test_regulation_parser.py -v
+
+# Test compliance checking
+pytest tests/unit/test_compliance_checker.py -v
+
+# Test certification validation
+pytest tests/unit/test_certification_validator.py -v
+```
+
+**Integration Tests**:
+```bash
+# Test complete compliance workflow
+pytest tests/integration/test_compliance_workflow.py -v
+
+# Test regulation updates
+pytest tests/integration/test_regulation_updates.py -v
+```
+
+**Manual Testing**:
+```bash
+# Test compliance checking
+curl -X POST 'http://localhost:8080/compliance/check' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "system_specs": {
+      "flow_rate": 1000,
+      "treatment_efficiency": 95,
+      "discharge_quality": {
+        "bod": 10,
+        "cod": 30,
+        "tss": 15
+      }
+    },
+    "regulations": ["SANS", "ISO"],
+    "jurisdiction": "south_africa"
+  }'
+
+# Test regulation database updates
+python tests/manual/test_regulation_updates.py
+
+# Verify compliance report generation
+python tests/manual/test_compliance_reports.py
+```
+
+#### 📊 Telemetry & Alerts Testing
+
+**Unit Tests**:
+```bash
+# Test metrics collection
+pytest tests/unit/test_metrics_collector.py -v
+
+# Test alert engine
+pytest tests/unit/test_alert_engine.py -v
+
+# Test notification channels
+pytest tests/unit/test_notification_channels.py -v
+```
+
+**Integration Tests**:
+```bash
+# Test complete telemetry workflow
+pytest tests/integration/test_telemetry_workflow.py -v
+
+# Test alert delivery
+pytest tests/integration/test_alert_delivery.py -v
+```
+
+**Manual Testing**:
+```bash
+# Test telemetry ingestion
+curl -X POST 'http://localhost:8080/telemetry/ingest' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "system_id": "WWTP-001",
+    "metrics": {
+      "flow_rate": 850,
+      "pressure": 2.5,
+      "temperature": 22.5,
+      "power_consumption": 45.2,
+      "efficiency": 94.8
+    },
+    "timestamp": "2024-01-15T10:30:00Z"
+  }'
+
+# Test alert configuration
+curl -X POST 'http://localhost:8080/telemetry/alerts' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "alert_type": "threshold",
+    "metric": "efficiency",
+    "threshold": 90,
+    "operator": "less_than",
+    "notification_channels": ["email", "slack"]
+  }'
+
+# Verify metrics dashboard
+python tests/manual/test_metrics_dashboard.py
+
+# Test alert response times
+python tests/manual/benchmark_alert_latency.py
+```
+
+### Cross-Service Integration Testing
+
+#### Multi-Service Workflow Tests
+```bash
+# Test complete project lifecycle
+pytest tests/integration/test_project_lifecycle.py -v
+
+# Test service communication
+pytest tests/integration/test_service_communication.py -v
+
+# Test data consistency across services
+pytest tests/integration/test_data_consistency.py -v
+```
+
+#### Performance Testing
+```bash
+# Load testing for new endpoints
+python tests/performance/load_test_new_services.py
+
+# Stress testing for concurrent operations
+python tests/performance/stress_test_concurrent.py
+
+# Memory usage profiling
+python tests/performance/profile_memory_usage.py
+```
+
+#### End-to-End Testing
+```bash
+# Complete system integration test
+pytest tests/e2e/test_complete_system.py -v
+
+# User journey testing
+pytest tests/e2e/test_user_journeys.py -v
+
+# API contract testing
+pytest tests/e2e/test_api_contracts.py -v
+```
+
+### Test Data Management
+
+#### Test Fixtures for New Services
+```bash
+# Generate test data for proposals
+python tests/fixtures/generate_proposal_data.py
+
+# Create mock e-commerce data
+python tests/fixtures/generate_catalog_data.py
+
+# Setup maintenance test scenarios
+python tests/fixtures/generate_maintenance_data.py
+
+# Create compliance test cases
+python tests/fixtures/generate_compliance_data.py
+
+# Generate telemetry test data
+python tests/fixtures/generate_telemetry_data.py
+```
+
+#### Database Test Setup
+```bash
+# Setup test database with new service schemas
+python tests/setup/setup_test_database.py
+
+# Seed test data for all services
+python tests/setup/seed_test_data.py
+
+# Clean test environment
+python tests/setup/cleanup_test_env.py
+```
+
+### Continuous Integration Testing
+
+#### GitHub Actions Workflow
+```yaml
+# .github/workflows/test-new-services.yml
+name: Test New Services
+on: [push, pull_request]
+jobs:
+  test-new-services:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run new service tests
+        run: |
+          pytest tests/unit/test_proposal* -v
+          pytest tests/unit/test_catalog* -v
+          pytest tests/unit/test_maintenance* -v
+          pytest tests/unit/test_compliance* -v
+          pytest tests/unit/test_telemetry* -v
+      - name: Run integration tests
+        run: pytest tests/integration/ -v
+      - name: Generate coverage report
+        run: pytest --cov=services --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+```
+
+#### Quality Gates
+```bash
+# Code coverage requirements
+pytest --cov=services --cov-fail-under=80
+
+# Code quality checks
+ruff check services/
+black --check services/
+mypy services/
+
+# Security scanning
+bandit -r services/
+safety check
+```
+
+### Test Data Management
+
+#### Test Fixtures for New Services
+```bash
+# Generate test data for proposals
+python tests/fixtures/generate_proposal_data.py
+
+# Create mock e-commerce data
+python tests/fixtures/generate_catalog_data.py
+
+# Setup maintenance test scenarios
+python tests/fixtures/generate_maintenance_data.py
+
+# Create compliance test cases
+python tests/fixtures/generate_compliance_data.py
+
+# Generate telemetry test data
+python tests/fixtures/generate_telemetry_data.py
+```
+
+#### Database Test Setup
+```bash
+# Setup test database with new service schemas
+python tests/setup/setup_test_database.py
+
+# Seed test data for all services
+python tests/setup/seed_test_data.py
+
+# Clean test environment
+python tests/setup/cleanup_test_env.py
+```
+
+### Continuous Integration Testing
+
+#### GitHub Actions Workflow
+```yaml
+# .github/workflows/test-new-services.yml
+name: Test New Services
+on: [push, pull_request]
+jobs:
+  test-new-services:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run new service tests
+        run: |
+          pytest tests/unit/test_proposal* -v
+          pytest tests/unit/test_catalog* -v
+          pytest tests/unit/test_maintenance* -v
+          pytest tests/unit/test_compliance* -v
+          pytest tests/unit/test_telemetry* -v
+      - name: Run integration tests
+        run: pytest tests/integration/ -v
+      - name: Generate coverage report
+        run: pytest --cov=services --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+```
+
+#### Quality Gates
+```bash
+# Code coverage requirements
+pytest --cov=services --cov-fail-under=80
+
+# Code quality checks
+ruff check services/
+black --check services/
+mypy services/
+
+# Security scanning
+bandit -r services/
+safety check
 ```
 
 ## Contribution Guidelines

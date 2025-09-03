@@ -65,6 +65,22 @@ EcoMate/
 └── .github/workflows/      # CI/CD automation
 ```
 
+## EcoMate Roadmap & Blueprints
+
+Our development is guided by a dynamic, unified set of artifacts:
+
+| Document | Description |
+|----------|-------------|
+| [Master Index & Roadmap Overview](eco_mate_master_index_roadmap_overview.md) | Top-level entry point with links and summaries of all roadmap documents |
+| [Future Roadmap (Living Document)](eco_mate_future_roadmap_living_document.md) | Phased development plan from foundation to autonomous ecosystem |
+| [Production Implementation Plan](eco_mate_production_implementation_plan_drop_in_files_steps.md) | Immediate codebase-ready drop-ins and steps for Phase 1 |
+| [Market & Supply Chain Data Integration](eco_mate_market_supply_chain_data_integration.md) | Vendor APIs, competitor monitoring, and alternative sourcing |
+| [Regulatory & Compliance Data Integration](eco_mate_regulatory_compliance_data_integration.md) | Standards APIs, legal feeds, and public record checks |
+| [Environmental & Geographic Data Integration](eco_mate_environmental_geographic_data_integration_implementation_plan.md) | Geospatial, climate, and permit-awareness enhancements |
+| [Operational & Predictive Data Integration](eco_mate_operational_predictive_data_integration.md) | IoT ingestion, predictive maintenance, and digital twin modeling |
+
+Start with the Master Index to navigate quickly to the relevant blueprint.
+
 ## 🔧 Key Features
 
 ### Documentation Platform

@@ -24,6 +24,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Error Handling**: Robust error recovery and retry mechanisms for web crawling
 - **Rate Limiting**: Intelligent rate limiting with respect for robots.txt and server capacity
 
+#### New Service Implementations
+- **Proposal & Computation Agent**: Automated technical proposal generation with engineering calculations
+  - Project requirement analysis and equipment sizing
+  - Cost estimation with real-time supplier pricing integration
+  - PDF proposal generation with technical specifications
+  - Engineering calculations for flow rates, pressure drops, and system sizing
+  - Multi-format output support (PDF, Word, HTML)
+  - Template-based proposal customization
+- **E-commerce Catalog Agent**: Multi-platform product synchronization and inventory management
+  - Shopify integration with automated product sync and inventory updates
+  - WooCommerce API integration for WordPress-based stores
+  - Medusa.js headless commerce platform support
+  - Real-time inventory synchronization across platforms
+  - Product mapping and category management
+  - Automated pricing updates and promotional sync
+- **Maintenance Scheduler**: Intelligent equipment maintenance planning and tracking
+  - Predictive maintenance scheduling based on equipment specifications
+  - Technician assignment and availability management
+  - Maintenance checklist generation and tracking
+  - Equipment lifecycle monitoring and replacement planning
+  - Integration with calendar systems and notification services
+  - Maintenance history tracking and reporting
+- **Compliance Agent**: Regulatory compliance monitoring and certification tracking
+  - Multi-jurisdiction compliance checking (SANS, ISO, CE, NSF)
+  - Certification validity monitoring and expiration alerts
+  - Regulatory update tracking and impact analysis
+  - Compliance gap identification and remediation planning
+  - Automated compliance reporting and documentation
+  - Market-specific regulation mapping and validation
+- **Telemetry & Alerts System**: Comprehensive system monitoring and performance analytics
+  - Real-time system health monitoring and metrics collection
+  - Configurable alert thresholds and notification channels
+  - Performance analytics and trend analysis
+  - Resource utilization monitoring (CPU, memory, storage)
+  - API response time tracking and SLA monitoring
+  - Integration with Slack, email, and webhook notifications
+
 ### Changed
 - **Research Workflow Architecture**: Redesigned with parser-first, LLM-fallback strategy for improved accuracy
 - **API Response Format**: Enhanced with detailed metadata, progress tracking, and error information
@@ -80,6 +117,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Rate Limiting**: Adaptive rate limiting based on server response times
 - **Circuit Breakers**: Automatic failure detection and recovery mechanisms
 - **Monitoring**: Prometheus metrics integration with Grafana dashboards
+
+#### New Service Technical Implementation
+
+**Proposal & Computation Service**:
+- **API Endpoints**: `/run/proposal`, `/run/proposal-template`, `/proposals/{id}`
+- **Workflow Integration**: `ProposalGenerationWorkflow` with Temporal orchestration
+- **Calculation Engine**: Engineering calculation modules for hydraulic sizing, cost estimation
+- **Template System**: Jinja2-based proposal templates with customizable layouts
+- **Output Formats**: PDF generation via WeasyPrint, Word via python-docx, HTML rendering
+- **Data Models**: `ProposalRequest`, `ProjectRequirements`, `CostEstimate`, `TechnicalSpecification`
+
+**E-commerce Catalog Service**:
+- **API Endpoints**: `/run/catalog-sync`, `/run/inventory-update`, `/catalog/platforms`, `/catalog/mappings`
+- **Platform Integrations**: 
+  - Shopify Admin API v2023-10 with GraphQL support
+  - WooCommerce REST API v3 with OAuth authentication
+  - Medusa.js Admin API with custom plugin architecture
+- **Sync Engine**: Incremental and full synchronization with conflict resolution
+- **Product Mapping**: Flexible schema mapping with field transformation rules
+- **Inventory Management**: Real-time stock level synchronization and low-stock alerts
+- **Data Models**: `ProductSync`, `InventoryUpdate`, `PlatformConfig`, `SyncReport`
+
+**Maintenance Scheduler Service**:
+- **API Endpoints**: `/run/schedule-maintenance`, `/maintenance/schedule`, `/maintenance/tasks`, `/maintenance/reports`
+- **Scheduling Engine**: Cron-based scheduling with equipment-specific intervals
+- **Predictive Analytics**: Machine learning models for optimal maintenance timing
+- **Calendar Integration**: CalDAV protocol support for external calendar systems
+- **Notification System**: Multi-channel notifications (email, SMS, Slack, webhook)
+- **Workflow Orchestration**: `MaintenanceSchedulingWorkflow` with automated task creation
+- **Data Models**: `MaintenanceTask`, `EquipmentProfile`, `TechnicianAssignment`, `MaintenanceReport`
+
+**Compliance Management Service**:
+- **API Endpoints**: `/run/compliance-check`, `/run/compliance-report`, `/compliance/regulations`, `/compliance/certifications`
+- **Regulation Database**: Comprehensive regulatory framework with version tracking
+- **Compliance Engine**: Rule-based compliance checking with configurable criteria
+- **Certification Tracking**: Automated expiration monitoring and renewal alerts
+- **Report Generation**: Automated compliance reports with audit trails
+- **Integration**: External regulatory API integration for real-time updates
+- **Data Models**: `ComplianceCheck`, `Regulation`, `Certification`, `ComplianceReport`
+
+**Telemetry & Alerts System**:
+- **API Endpoints**: `/telemetry/metrics`, `/telemetry/alerts`, `/telemetry/dashboards`, `/telemetry/health`
+- **Metrics Collection**: Prometheus-compatible metrics with custom collectors
+- **Alert Engine**: Configurable thresholds with escalation policies
+- **Dashboard System**: Grafana integration with pre-built dashboards
+- **Health Checks**: Comprehensive system health monitoring with dependency tracking
+- **Performance Analytics**: Real-time performance analysis with trend detection
+- **Data Models**: `MetricData`, `AlertRule`, `NotificationChannel`, `HealthStatus`
+
+**Cross-Service Infrastructure**:
+- **Authentication**: JWT-based authentication with role-based access control
+- **Rate Limiting**: Service-specific rate limiting with Redis backend
+- **Error Handling**: Standardized error responses with correlation IDs
+- **Logging**: Structured logging with ELK stack integration
+- **Configuration**: Environment-based configuration with validation schemas
+- **Testing**: Comprehensive test coverage with integration and end-to-end tests
 
 ## [1.0.0] - 2024-01-15
 
