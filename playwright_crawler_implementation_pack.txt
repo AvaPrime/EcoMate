@@ -1,0 +1,319 @@
+# EcoMate AI — Playwright Crawler (Implementation Pack)
+
+This pack upgrades the Research Agent with a **JavaScript-capable crawler** using **Playwright (Python)**. It plugs into `activity_crawl` as a drop-in mode and supports **login portals**, **JS-rendered pages**, and **interactive actions** (click “Load more”, paginate, etc.).
+
+> **Outcome:** A new `crawler_mode` switch (`"httpx" | "playwright"`) + optional **action recipes** and **login state**. Crawled HTML/PDF is still persisted to **MinIO**; extracted tables flow into the existing structuring + PR pipeline.
+
+---
+
+## 0) Prereqs
+- Python 3.11+
+- Add these to **`requirements.txt`**:
+```txt
+playwright==1.45.0
+```
+- One-time browser install on the machine/container running the worker:
+```bash
+python -m playwright install --with-deps
+```
+> If using Docker later, you’ll add this install step to the image build.
+
+- Ensure `.env` has MinIO creds (already in your scaffold) and add credentials for any sites you will log into.
+
+Append to **`.env.example`**:
+```env
+# Playwright crawler
+CRAWLER_MODE=httpx           # default; set to playwright to enable JS crawling
+PW_HEADLESS=true             # set false for local debugging
+PW_NAV_TIMEOUT_MS=30000
+PW_MAX_PAGES=5               # max pages to paginate when recipe defines next selector
+
+# Example site login (per-domain; optional)
+SITE1_LOGIN_URL=
+SITE1_USER=
+SITE1_PASS=
+# Storage state file path (persisted login cookies)
+PW_STORAGE_STATE=.playwright/state.json
+```
+
+---
+
+## 1) Action Recipes (optional)
+Define site-specific interaction steps in a YAML so the crawler can click and paginate without code changes.
+
+Create **`services/crawler/recipes.yaml`**
+```yaml
+# Example recipe keyed by domain
+"shop.example.co.za":
+  steps:
+    - wait: "#product-grid"
+    - click: "button.load-more"
+    - wait: "#product-grid .product:last-child"
+  pagination:
+    next_selector: "a[rel=next], .pagination .next a"
+    max_pages: 3
+
+"secure.vendor.com":
+  login:
+    url_env: "SITE1_LOGIN_URL"
+    username_env: "SITE1_USER"
+    password_env: "SITE1_PASS"
+    username_selector: "#email"
+    password_selector: "#password"
+    submit_selector: "button[type=submit]"
+  steps:
+    - wait: "#catalog"
+  pagination:
+    next_selector: "button[data-action=next]"
+    max_pages: 10
+```
+
+---
+
+## 2) Playwright helper
+Create **`services/utils/browser.py`**
+```python
+import os, asyncio, json
+from urllib.parse import urlparse
+from playwright.async_api import async_playwright
+
+HEADLESS = os.getenv("PW_HEADLESS", "true").lower() == "true"
+NAV_TIMEOUT = int(os.getenv("PW_NAV_TIMEOUT_MS", "30000"))
+STORAGE_STATE = os.getenv("PW_STORAGE_STATE", ".playwright/state.json")
+
+async def _ensure_storage_dir():
+    d = os.path.dirname(STORAGE_STATE)
+    if d and not os.path.exists(d):
+        os.makedirs(d, exist_ok=True)
+
+async def browser_context():
+    await _ensure_storage_dir()
+    pw = await async_playwright().start()
+    browser = await pw.chromium.launch(headless=HEADLESS)
+    context = await browser.new_context(storage_state=STORAGE_STATE if os.path.exists(STORAGE_STATE) else None)
+    context.set_default_navigation_timeout(NAV_TIMEOUT)
+    return pw, browser, context
+
+async def save_storage(context):
+    await context.storage_state(path=STORAGE_STATE)
+
+async def domain_of(url: str) -> str:
+    return urlparse(url).netloc.lower()
+```
+
+---
+
+## 3) Recipe loader
+Create **`services/utils/recipes.py`**
+```python
+import os, yaml
+from urllib.parse import urlparse
+
+RECIPES_PATH = os.path.join(os.path.dirname(__file__), "..", "crawler", "recipes.yaml")
+
+def domain_key(url: str) -> str:
+    return urlparse(url).netloc.lower()
+
+def load_recipes(path: str = RECIPES_PATH):
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+def recipe_for(url: str, recipes=None):
+    recipes = recipes or load_recipes()
+    return recipes.get(domain_key(url))
+```
+
+---
+
+## 4) Playwright crawler activity
+Create **`services/orchestrator/activities_crawl_playwright.py`**
+```python
+import os, asyncio
+from typing import List, Dict
+from services.utils.browser import browser_context, save_storage
+from services.utils.minio_store import put_bytes
+from services.utils.recipes import recipe_for
+
+async def _apply_login(page, recipe):
+    if not recipe or not recipe.get("login"):
+        return
+    env = recipe["login"]
+    url = os.getenv(env.get("url_env", ""), "")
+    if not url:
+        return
+    await page.goto(url)
+    if u := env.get("username_selector"):
+        await page.fill(u, os.getenv(env.get("username_env", ""), ""))
+    if p := env.get("password_selector"):
+        await page.fill(p, os.getenv(env.get("password_env", ""), ""))
+    if s := env.get("submit_selector"):
+        await page.click(s)
+    await page.wait_for_load_state("networkidle")
+
+async def _apply_steps(page, recipe):
+    for step in (recipe.get("steps") or []):
+        if w := step.get("wait"):
+            await page.wait_for_selector(w)
+        if c := step.get("click"):
+            await page.click(c)
+            await page.wait_for_load_state("networkidle")
+
+async def _paginate(page, pagination):
+    max_pages = int(pagination.get("max_pages", 1))
+    sel = pagination.get("next_selector")
+    for _ in range(max_pages-1):
+        if not sel:
+            break
+        btn = await page.query_selector(sel)
+        if not btn:
+            break
+        await btn.click()
+        await page.wait_for_load_state("networkidle")
+
+async def crawl_with_playwright(urls: List[str]) -> List[Dict]:
+    pw, browser, context = await browser_context()
+    results = []
+    try:
+        page = await context.new_page()
+        for url in urls:
+            recipe = recipe_for(url)
+            # Optional login first (domain-level)
+            await _apply_login(page, recipe)
+            await page.goto(url)
+            await _apply_steps(page, recipe)
+            if recipe and recipe.get("pagination"):
+                await _paginate(page, recipe["pagination"])
+            html = await page.content()
+            s3url = put_bytes("artifacts/html", html.encode("utf-8"), content_type="text/html")
+            results.append({"url": url, "content_type": "text/html", "artifact": s3url})
+        await save_storage(context)
+    finally:
+        await context.close()
+        await browser.close()
+        await pw.stop()
+    return results
+```
+
+---
+
+## 5) Integrate with existing crawl activity
+Modify **`services/orchestrator/activities_research.py`** to accept a `crawler_mode` and delegate.
+
+Find the existing `activity_crawl` and replace it with:
+```python
+import os, httpx
+from services.utils.robots import allowed
+from services.utils.minio_store import put_bytes
+from services.utils.html_tables import extract_first_table
+from services.utils.pdf_extract import extract_tables
+
+CRAWLER_MODE = os.getenv("CRAWLER_MODE", "httpx").lower()
+
+async def activity_crawl(urls: list[str], crawler_mode: str | None = None):
+    mode = (crawler_mode or CRAWLER_MODE).lower()
+    if mode == "playwright":
+        from services.orchestrator.activities_crawl_playwright import crawl_with_playwright
+        return await crawl_with_playwright(urls)
+
+    # default httpx path
+    results = []
+    async with httpx.AsyncClient(timeout=30) as c:
+        for url in urls:
+            if not allowed(url):
+                results.append({"url": url, "status": "blocked_by_robots"})
+                continue
+            try:
+                r = await c.get(url, headers={"User-Agent": "EcoMateBot/1.0"})
+                ct = r.headers.get("Content-Type", "")
+                data = r.content
+                prefix = "artifacts/html" if "html" in ct else "artifacts/pdf"
+                s3url = put_bytes(prefix, data, content_type=ct or "application/octet-stream")
+                item = {"url": url, "content_type": ct, "artifact": s3url}
+                if "pdf" in ct or url.lower().endswith(".pdf"):
+                    item["pdf_tables"] = extract_tables(data)
+                else:
+                    item["html_table"] = extract_first_table(r.text)
+                results.append(item)
+            except Exception as e:
+                results.append({"url": url, "status": f"error: {e}"})
+    return results
+```
+
+**Update the workflow call** in `services/orchestrator/research_workflows.py` so you can pass a mode from the API if desired (backward compatible if omitted):
+```python
+# ... inside ResearchWorkflow.run
+crawled = await workflow.execute_activity(
+    "activity_crawl", urls[:limit], start_to_close_timeout=600
+)
+```
+*(No change needed unless you want to add a separate parameter. See API below.)*
+
+---
+
+## 6) API: expose crawler mode (optional)
+Update **`services/api/main.py`** research endpoint to accept `crawler_mode`:
+```python
+class ResearchReq(BaseModel):
+    query: str
+    urls: list[str] = []
+    limit: int = 10
+    crawler_mode: str | None = None  # "httpx" | "playwright"
+
+@app.post("/run/research")
+async def run_research(req: ResearchReq):
+    client = await Client.connect("localhost:7233")
+    # Pass mode via search attributes or args if you want; simple approach: env var controls default
+    handle = await client.start_workflow(
+        "services.orchestrator.research_workflows.ResearchWorkflow.run",
+        req.query,
+        req.urls,
+        req.limit,
+        id=f"research-{req.query[:16]}",
+        task_queue="ecomate-ai",
+    )
+    return await handle.result()
+```
+
+> Minimal change: keep mode governed by `CRAWLER_MODE`. If you prefer per-call mode, you can add a second parameter to the workflow and thread it through.
+
+---
+
+## 7) Makefile helpers
+Append to **`Makefile`**
+```make
+# Run with Playwright
+research-pw:
+	CRAWLER_MODE=playwright curl -X POST http://localhost:8080/run/research \
+	  -H 'Content-Type: application/json' \
+	  -d '{"query":"supplier catalog","urls":["https://shop.example.co.za/collections/pumps"],"limit":1,"crawler_mode":"playwright"}'
+```
+
+---
+
+## 8) Debugging tips
+- Set `PW_HEADLESS=false` and run the worker locally to watch the browser.
+- Use `recipes.yaml` to declare steps/pagination; keep domain keys lowercase.
+- Persisted login is stored at `PW_STORAGE_STATE`; commit **ignored** by git by adding this to `.gitignore`:
+```gitignore
+.playwright/
+```
+
+---
+
+## 9) Governance
+- Respect robots.txt (still enforced by `activity_crawl` for httpx path; for Playwright, be mindful and use allowlists and recipes for domains you have rights to crawl.)
+- Prefer official APIs where available.
+- Never merge without human review; PR remains the control point.
+
+---
+
+## 10) Next Up (optional)
+- Vendor-specific scrapers tied to recipe keys (map CSS → field extraction for `suppliers.csv` and `parts_list.csv`)
+- Per-domain rate limiting and concurrency (queue URLs; `sem = asyncio.Semaphore(n)`)
+- Screenshot capture per page and attach to MinIO for diffs
+
+---
+
+**End of Pack — paste files/edits as shown, run `python -m playwright install --with-deps`, then `make research-pw`.**

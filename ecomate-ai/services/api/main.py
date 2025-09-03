@@ -12,6 +12,9 @@ class ResearchReq(BaseModel):
 class PriceMonitorReq(BaseModel):
     create_pr: bool = True
 
+class NewResearchReq(BaseModel):
+    urls: list[str]
+
 @app.post("/run/research")
 async def run_research(req: ResearchReq):
     urls = [
@@ -27,6 +30,22 @@ async def run_research(req: ResearchReq):
         id=f"research-{req.query[:12]}",
         task_queue="ecomate-ai",
     )
+    res = await handle.result()
+    return res
+
+@app.post("/run/new-research")
+async def run_new_research(req: NewResearchReq):
+    """Trigger new research workflow for crawling and extracting supplier/parts data."""
+    client = await Client.connect("localhost:7233")
+    workflow_id = f"new-research-{uuid.uuid4().hex[:8]}"
+    
+    handle = await client.start_workflow(
+        "services.orchestrator.research_workflows.ResearchWorkflow.run",
+        req.urls,
+        id=workflow_id,
+        task_queue="ecomate-ai",
+    )
+    
     res = await handle.result()
     return res
 

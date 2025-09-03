@@ -1,0 +1,466 @@
+# EcoMate AI — Research Agent (Implementation Pack)
+
+This pack adds a **Research Agent** to `ecomate-ai` that crawls supplier/manufacturer pages, extracts specs & prices (HTML + PDF), stores raw artifacts to **MinIO**, converts findings into normalized rows for **`data/suppliers.csv`** and **`data/parts_list.csv`**, and opens a **GitHub PR** with updates and a JSON evidence bundle.
+
+> **Outcome:** Durable Temporal workflow → crawl → parse (HTML/PDF) → optional LLM structuring (Gemini via router) → write CSV/JSON → PR. Everything is ready to paste.
+
+---
+
+## 0) Prereqs & Notes
+- Repo: `ecomate-ai` scaffold running (Temporal + API + Worker)
+- `gh` CLI authenticated **or** `GH_TOKEN` set (used by `github_pr.py`)
+- MinIO running (from `docker-compose`), `.env` has credentials & bucket
+- Optional: Ollama and/or Vertex (Gemini) wired through `ModelRouter` for JSON extraction
+
+> **Ethics**: Respect robots.txt and site ToS. Prefer vendor APIs when possible.
+
+---
+
+## 1) Data Schemas (CSV headers)
+Create/confirm the following headers. The agent **appends/updates** by `sku` (for `suppliers`) and `part_number` (for `parts_list`).
+
+**`data/suppliers.csv`**
+```
+sku,name,brand,model,category,url,currency,price,availability,moq,lead_time,notes,last_seen
+```
+
+**`data/parts_list.csv`**
+```
+part_number,description,category,specs_json,unit,price,currency,supplier,sku,url,notes,last_seen
+```
+
+> If files do not exist, they will be created with these headers.
+
+---
+
+## 2) Utilities — Robots, MinIO, PDF, HTML
+
+### 2.1 `services/utils/robots.py`
+```python
+import urllib.robotparser as urp
+from urllib.parse import urlparse
+from functools import lru_cache
+
+AGENT = "EcoMateBot/1.0"
+
+@lru_cache(maxsize=512)
+def _rp_for(root: str) -> urp.RobotFileParser:
+    rp = urp.RobotFileParser()
+    rp.set_url(root + "/robots.txt")
+    try:
+        rp.read()
+    except Exception:
+        # Be conservative if robots.txt unreachable
+        rp = urp.RobotFileParser()
+        rp.parse([f"User-agent: *", "Allow: /"])
+    return rp
+
+def allowed(url: str, agent: str = AGENT) -> bool:
+    p = urlparse(url)
+    root = f"{p.scheme}://{p.netloc}"
+    return _rp_for(root).can_fetch(agent, url)
+```
+
+### 2.2 `services/utils/minio_store.py`
+```python
+import os, io, uuid
+import boto3
+from botocore.client import Config
+
+MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER", "minioadmin")
+MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
+MINIO_BUCKET = os.getenv("MINIO_BUCKET", "ecomate-artifacts")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
+
+_s3 = boto3.client(
+    "s3",
+    endpoint_url=MINIO_ENDPOINT,
+    aws_access_key_id=MINIO_ROOT_USER,
+    aws_secret_access_key=MINIO_ROOT_PASSWORD,
+    config=Config(signature_version="s3v4"),
+    region_name="us-east-1",
+)
+
+def ensure_bucket():
+    try:
+        _s3.head_bucket(Bucket=MINIO_BUCKET)
+    except Exception:
+        _s3.create_bucket(Bucket=MINIO_BUCKET)
+
+def put_bytes(prefix: str, data: bytes, content_type: str = "application/octet-stream") -> str:
+    ensure_bucket()
+    key = f"{prefix.strip('/')}/{uuid.uuid4().hex}"
+    _s3.put_object(Bucket=MINIO_BUCKET, Key=key, Body=data, ContentType=content_type)
+    return f"s3://{MINIO_BUCKET}/{key}"
+```
+
+### 2.3 `services/utils/pdf_extract.py`
+```python
+import io, json
+import pdfplumber
+
+# Returns list[dict] with keys: table_index, rows (list[list[str]]), meta
+
+def extract_tables(pdf_bytes: bytes):
+    out = []
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        for pi, page in enumerate(pdf.pages):
+            tables = page.extract_tables() or []
+            for ti, t in enumerate(tables):
+                # Normalize rows to strings
+                norm = [[(c or "").strip() for c in row] for row in t]
+                out.append({
+                    "page": pi + 1,
+                    "table_index": ti,
+                    "rows": norm,
+                    "meta": {"n_cols": max((len(r) for r in norm), default=0)}
+                })
+    return out
+```
+
+### 2.4 `services/utils/html_tables.py`
+```python
+from selectolax.parser import HTMLParser
+
+# Returns list[list[str]] (rows)
+
+def extract_first_table(html: str):
+    doc = HTMLParser(html)
+    tbl = doc.css_first("table")
+    if not tbl:
+        return []
+    rows = []
+    for tr in tbl.css("tr"):
+        cells = [c.text(strip=True) for c in tr.css("th, td")] or []
+        if cells:
+            rows.append(cells)
+    return rows
+```
+
+---
+
+## 3) Activities — Crawl, Parse, LLM Structuring, PR
+
+### 3.1 `services/orchestrator/activities_research.py`
+```python
+import os, csv, io, json, mimetypes
+from datetime import datetime, timezone
+from typing import List, Dict
+import httpx
+from services.utils.robots import allowed
+from services.utils.minio_store import put_bytes
+from services.utils.pdf_extract import extract_tables
+from services.utils.html_tables import extract_first_table
+from services.utils.github_pr import open_pr
+from services.orchestrator.model_router import ModelRouter
+import yaml
+
+SUPPLIERS = "data/suppliers.csv"
+PARTS = "data/parts_list.csv"
+
+# ---------- Helpers ----------
+
+def _now_iso():
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat()
+
+def _ensure_headers(path: str, headers: List[str]):
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            csv.writer(f).writerow(headers)
+
+
+def _append_or_update_by_key(path: str, key: str, row: Dict[str, str], headers: List[str]):
+    rows: List[Dict[str, str]] = []
+    if os.path.exists(path):
+        with open(path, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+    found = False
+    for r in rows:
+        if r.get(key) == row.get(key):
+            r.update(row)
+            found = True
+            break
+    if not found:
+        rows.append(row)
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=headers)
+        w.writeheader()
+        for r in rows:
+            w.writerow({h: r.get(h, "") for h in headers})
+
+# ---------- Activities ----------
+
+async def activity_crawl(urls: List[str]) -> List[Dict]:
+    results = []
+    async with httpx.AsyncClient(timeout=30) as c:
+        for url in urls:
+            if not allowed(url):
+                results.append({"url": url, "status": "blocked_by_robots"})
+                continue
+            try:
+                r = await c.get(url, headers={"User-Agent": "EcoMateBot/1.0"})
+                ct = r.headers.get("Content-Type", "")
+                data = r.content
+                # Save artifact
+                prefix = "artifacts/html" if "html" in ct else "artifacts/pdf"
+                s3url = put_bytes(prefix, data, content_type=ct or "application/octet-stream")
+                item = {"url": url, "content_type": ct, "artifact": s3url}
+                if "pdf" in ct or url.lower().endswith(".pdf"):
+                    tables = extract_tables(data)
+                    item["pdf_tables"] = tables
+                else:
+                    # HTML
+                    html_text = r.text
+                    table = extract_first_table(html_text)
+                    item["html_table"] = table
+                results.append(item)
+            except Exception as e:
+                results.append({"url": url, "status": f"error: {e}"})
+    return results
+
+async def activity_struct_extract(crawled: List[Dict]) -> Dict[str, List[Dict]]:
+    """Use LLM (via ModelRouter) to structure supplier & parts rows from crawled artifacts/tables.
+    Returns dict with keys: suppliers, parts, evidence (json).
+    """
+    # Load router
+    cfg_path = os.path.join(os.path.dirname(__file__), "model_router.py")
+    # Actually we need YAML config
+    import pathlib, yaml
+    cfg = yaml.safe_load(open(pathlib.Path(__file__).with_name("config.yaml")))
+    router = ModelRouter(cfg)
+
+    suppliers, parts, evidence = [], [], []
+
+    # Build a compact prompt per item (HTML table or first page table rows)
+    for item in crawled:
+        url = item.get("url")
+        if item.get("status"):
+            continue
+        context_rows = item.get("html_table") or []
+        if not context_rows and item.get("pdf_tables"):
+            # take the largest table by rows
+            tables = sorted(item["pdf_tables"], key=lambda t: len(t.get("rows", [])), reverse=True)
+            context_rows = tables[0]["rows"] if tables else []
+        # Truncate for token safety
+        rows_preview = context_rows[:30]
+        prompt = (
+            "Extract supplier and part details as JSON arrays with keys: "
+            "suppliers:[{sku,name,brand,model,category,url,currency,price,availability,moq,lead_time,notes}], "
+            "parts:[{part_number,description,category,specs_json,unit,price,currency,supplier,sku,url,notes}].\n"
+            f"Source URL: {url}\n"
+            "If data not present, omit the field. Be concise. Rows:\n" + json.dumps(rows_preview)
+        )
+        try:
+            resp = await router.run("reason", prompt)
+            # Router may return plain text; try to extract JSON
+            j = _safe_json(resp)
+            if j:
+                for s in j.get("suppliers", []):
+                    s["url"] = s.get("url") or url
+                    s["last_seen"] = _now_iso()
+                    suppliers.append(s)
+                for p in j.get("parts", []):
+                    p["url"] = p.get("url") or url
+                    p["last_seen"] = _now_iso()
+                    # specs_json must be string JSON
+                    if isinstance(p.get("specs_json"), (dict, list)):
+                        p["specs_json"] = json.dumps(p["specs_json"]) 
+                    parts.append(p)
+                evidence.append({"url": url, "prompt": prompt[:5000], "raw": resp[:5000]})
+        except Exception as e:
+            evidence.append({"url": url, "error": str(e)})
+    return {"suppliers": suppliers, "parts": parts, "evidence": evidence}
+
+async def activity_write_and_pr(payload: Dict):
+    # Ensure headers
+    _ensure_headers(SUPPLIERS, ["sku","name","brand","model","category","url","currency","price","availability","moq","lead_time","notes","last_seen"])
+    _ensure_headers(PARTS, ["part_number","description","category","specs_json","unit","price","currency","supplier","sku","url","notes","last_seen"])
+
+    # Apply upserts
+    for s in payload.get("suppliers", []):
+        _append_or_update_by_key(SUPPLIERS, "sku", s, ["sku","name","brand","model","category","url","currency","price","availability","moq","lead_time","notes","last_seen"])
+    for p in payload.get("parts", []):
+        _append_or_update_by_key(PARTS, "part_number", p, ["part_number","description","category","specs_json","unit","price","currency","supplier","sku","url","notes","last_seen"])
+
+    # Build changes content
+    with open(SUPPLIERS, encoding="utf-8") as f:
+        suppliers_csv = f.read()
+    with open(PARTS, encoding="utf-8") as f:
+        parts_csv = f.read()
+    evidence_json = json.dumps(payload.get("evidence", []), ensure_ascii=False, indent=2)
+
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    branch = f"bot/research-{today}"
+    changes = {
+        SUPPLIERS: suppliers_csv,
+        PARTS: parts_csv,
+        f"reports/RESEARCH_EVIDENCE_{today}.json": evidence_json,
+    }
+    open_pr(branch, f"Research: seed/update suppliers & parts ({today})", changes)
+    return {"branch": branch, "suppliers": len(payload.get("suppliers", [])), "parts": len(payload.get("parts", []))}
+
+# ---------- JSON helper ----------
+
+def _safe_json(txt: str):
+    try:
+        # attempt raw
+        return json.loads(txt)
+    except Exception:
+        # try to locate the first {...} or [...] block
+        import re
+        m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", txt)
+        if not m:
+            return None
+        try:
+            return json.loads(m.group(1))
+        except Exception:
+            return None
+```
+
+---
+
+## 4) Workflow — Temporal definition
+Create **`services/orchestrator/research_workflows.py`**
+```python
+from temporalio import workflow
+from temporalio.contrib.logger import wf_logger
+
+@workflow.defn
+class ResearchWorkflow:
+    @workflow.run
+    async def run(self, query: str, urls: list[str], limit: int = 10):
+        wf_logger.info(f"Research start: query={query} urls={len(urls)} limit={limit}")
+        # 1) Crawl
+        crawled = await workflow.execute_activity(
+            "activity_crawl", urls[:limit], start_to_close_timeout=600
+        )
+        # 2) Structure extract (LLM + heuristics)
+        payload = await workflow.execute_activity(
+            "activity_struct_extract", crawled, start_to_close_timeout=600
+        )
+        # 3) Write CSVs and open PR
+        result = await workflow.execute_activity(
+            "activity_write_and_pr", payload, start_to_close_timeout=300
+        )
+        return result
+```
+
+---
+
+## 5) Worker — Register workflow & activities
+Update **`services/orchestrator/worker.py`** to import and register the new workflow/activities.
+```python
+from services.orchestrator.research_workflows import ResearchWorkflow
+from services.orchestrator.activities_research import (
+    activity_crawl, activity_struct_extract, activity_write_and_pr,
+)
+
+# ... inside Worker(...)
+worker = Worker(
+    client,
+    task_queue="ecomate-ai",
+    workflows=[ResearchWorkflow, PriceMonitorWorkflow],  # keep PriceMonitor if already added
+    activities={
+        "activity_llm_intro": activity_llm_intro,                # existing demo
+        "activity_fetch_and_log": acts.activity_fetch_and_log,   # existing demo
+        "activity_open_docs_pr": acts.activity_open_docs_pr,     # existing demo
+        "activity_crawl": activity_crawl,
+        "activity_struct_extract": activity_struct_extract,
+        "activity_write_and_pr": activity_write_and_pr,
+        # price activities can remain if implemented
+    },
+)
+```
+
+> If you don’t have `PriceMonitorWorkflow` yet, remove it from the `workflows=[...]` list.
+
+---
+
+## 6) API — Trigger endpoint
+Append to **`services/api/main.py`**
+```python
+from pydantic import BaseModel
+from temporalio.client import Client
+
+class ResearchReq(BaseModel):
+    query: str
+    urls: list[str] = []
+    limit: int = 10
+
+@app.post("/run/research")
+async def run_research(req: ResearchReq):
+    client = await Client.connect("localhost:7233")
+    handle = await client.start_workflow(
+        "services.orchestrator.research_workflows.ResearchWorkflow.run",
+        req.query,
+        req.urls,
+        req.limit,
+        id=f"research-{req.query[:16]}",
+        task_queue="ecomate-ai",
+    )
+    return await handle.result()
+```
+
+---
+
+## 7) Makefile — Helper target
+Append to **`Makefile`**
+```make
+research:
+	curl -X POST http://localhost:8080/run/research \
+	  -H 'Content-Type: application/json' \
+	  -d '{"query":"south africa wastewater suppliers","urls":["https://en.wikipedia.org/wiki/Moving_bed_biofilm_reactor"],"limit":5}'
+```
+
+---
+
+## 8) ModelRouter — JSON extraction via Gemini/Ollama (optional)
+Your existing `ModelRouter` stub works; for production, wire a real Gemini call or keep Ollama for cost‑effective structuring.
+
+**`services/orchestrator/model_router.py` (excerpt — replace _vertex stub if desired)**
+```python
+    async def _vertex(self, model: str, prompt: str):
+        # Option A: Call a gateway you control that wraps Vertex AI
+        # Option B: Use google-genai (requires GOOGLE_API_KEY) — simplified example
+        try:
+            import google.genai as genai
+            client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+            resp = client.models.generate_content(model=model, contents=[prompt])
+            # unwrap text
+            return getattr(resp, "text", str(resp))
+        except Exception as e:
+            return f"[vertex-mock:{model}] {prompt[:800]} // {e}"
+```
+
+> You can also routeto `ollama:qwen2.5:14b-instruct` for `reason` if you don’t need Gemini.
+
+---
+
+## 9) Governance & Evidence
+- Raw HTML/PDF artifacts are stored in **MinIO** (S3 URLs in `artifact` field).
+- A JSON evidence file (`reports/RESEARCH_EVIDENCE_YYYY-MM-DD.json`) is added to each PR.
+- CSVs are **upserted** by `sku` / `part_number`.
+- All changes land as a PR; nothing writes to `main` directly.
+
+---
+
+## 10) Runbook
+1. **Start infra**: `docker compose up -d postgres minio temporal nats`
+2. **Worker**: `python services/orchestrator/worker.py`
+3. **API**: `uvicorn services.api.main:app --reload --port 8080`
+4. **Test**: `make research` (or POST `/run/research` with your supplier URLs)
+5. **Review PR**: In `ecomate-docs`, inspect CSV diffs + `RESEARCH_EVIDENCE_*.json`.
+
+---
+
+## 11) Future enhancements
+- Add Playwright-based crawler for JS-heavy sites + login flows
+- Vendor‑specific parsers (e.g., pump curves, UV reactor SKUs) with pydantic validation
+- Multi‑page discovery via sitemap/links with per-domain rate limits
+- Currency normalization (FX rates) and MOQ/lead‑time heuristics
+- Slack/Email notification with PR link and summary
+
+---
+
+**End of Pack — paste files/edits as shown, then run `make research`.**

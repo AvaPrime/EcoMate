@@ -10,5 +10,8 @@ api:
 price-monitor:
 	curl -X POST "http://localhost:8080/run/price-monitor" -H "Content-Type: application/json" -d '{"create_pr": true}'
 
+research:
+	curl -X POST "http://localhost:8080/run/new-research" -H "Content-Type: application/json" -d '{"urls": ["https://example.com/suppliers", "https://example.com/parts"]}'
+
 kill:
 	docker compose down -v
