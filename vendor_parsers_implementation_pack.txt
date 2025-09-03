@@ -1,0 +1,443 @@
+# EcoMate AI — Vendor Parsers (Pydantic) Implementation Pack
+
+This pack adds **typed, vendor/product‑specific parsers** with **pydantic validation** to the Research Agent. It boosts accuracy by converting noisy HTML/PDF tables into **schema‑checked objects**, then writing normalized rows into `data/suppliers.csv` and `data/parts_list.csv`. If a parser can’t confidently interpret a page, the pipeline **falls back to the LLM**.
+
+> **Outcome**: Deterministic, machine‑grade data for pumps and UV reactors first; easy to add more product families/vendors.
+
+---
+
+## 0) Prereqs
+Append to **`requirements.txt`** (if not present):
+```txt
+pydantic==2.8.2
+pydantic-settings==2.4.0
+pint==0.24.4
+python-slugify==8.0.4
+```
+
+Add to **`.env.example`** (optional knobs):
+```env
+# Parser behavior
+PARSER_STRICT=false            # if true, hard-fail on validation errors; else collect in report
+DEFAULT_CURRENCY=ZAR           # used when pages omit currency
+```
+
+---
+
+## 1) Directory layout
+Create a new folder tree:
+```
+services/
+  parsers/
+    __init__.py
+    models.py          # pydantic schemas + enums
+    normalize.py       # unit parsing & helpers
+    pumps.py           # parser for pump product tables/pages
+    uv.py              # parser for UV reactors
+    dispatcher.py      # selects the right parser based on domain/category
+```
+
+---
+
+## 2) Pydantic models — `services/parsers/models.py`
+```python
+from __future__ import annotations
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, Literal
+
+class SupplierRow(BaseModel):
+    sku: str = Field(..., description="Supplier stock keeping unit")
+    name: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    category: Optional[str] = None
+    url: Optional[str] = None
+    currency: Optional[str] = None
+    price: Optional[float] = None
+    availability: Optional[str] = None
+    moq: Optional[str] = None
+    lead_time: Optional[str] = None
+    notes: Optional[str] = None
+    last_seen: Optional[str] = None
+
+    @field_validator('currency')
+    @classmethod
+    def cur_upper(cls, v):
+        return v.upper() if isinstance(v, str) else v
+
+class PartRow(BaseModel):
+    part_number: str = Field(...)
+    description: Optional[str] = None
+    category: Optional[str] = None
+    specs_json: Optional[str] = None
+    unit: Optional[str] = None
+    price: Optional[float] = None
+    currency: Optional[str] = None
+    supplier: Optional[str] = None
+    sku: Optional[str] = None
+    url: Optional[str] = None
+    notes: Optional[str] = None
+    last_seen: Optional[str] = None
+
+# Domain objects for richer validation
+class Pump(BaseModel):
+    model: str
+    brand: Optional[str] = None
+    flow_m3h: Optional[float] = Field(None, description="Nominal flow in m^3/h")
+    head_m: Optional[float] = Field(None, description="Nominal head in meters")
+    power_kw: Optional[float] = None
+    voltage_v: Optional[int] = None
+    phase: Optional[Literal['1','3']] = None
+    material: Optional[str] = None
+
+class UVReactor(BaseModel):
+    model: str
+    brand: Optional[str] = None
+    flow_m3h: Optional[float] = None
+    dose_mj_cm2: Optional[float] = None
+    lamp_w: Optional[int] = None
+    lamps_qty: Optional[int] = None
+    chamber_material: Optional[str] = None
+```
+
+---
+
+## 3) Normalization helpers — `services/parsers/normalize.py`
+```python
+import re, json, os
+from typing import Optional
+from slugify import slugify
+from pint import UnitRegistry
+ureg = UnitRegistry()
+
+DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "ZAR").upper()
+
+def to_float(s: str) -> Optional[float]:
+    if s is None: return None
+    s = s.strip().replace(',', '')
+    m = re.search(r"-?\d+(?:\.\d+)?", s)
+    return float(m.group()) if m else None
+
+def model_sku(*parts) -> str:
+    base = "-".join([p for p in parts if p]).strip()
+    return slugify(base).upper()
+
+def flow_to_m3h(val: str) -> Optional[float]:
+    # Accept e.g. "25 m3/h", "25 m³/h", "1000 L/h", "16 gpm"
+    if not val: return None
+    v = val.replace('³','3').lower()
+    # quick heuristics
+    if 'm3/h' in v or 'm^3/h' in v:
+        return to_float(v)
+    if 'l/h' in v:
+        f = to_float(v)
+        return f/1000 if f is not None else None
+    if 'gpm' in v:
+        f = to_float(v)
+        return round((f * 0.227124), 3) if f is not None else None
+    # last resort pint
+    try:
+        q = ureg.Quantity(v)
+        return q.to('meter**3/hour').magnitude
+    except Exception:
+        return to_float(v)
+
+def head_to_m(val: str) -> Optional[float]:
+    if not val: return None
+    if 'm' in val.lower():
+        return to_float(val)
+    try:
+        q = ureg.Quantity(val)
+        return q.to('meter').magnitude
+    except Exception:
+        return to_float(val)
+
+def currency_or_default(cur: str | None) -> str:
+    return (cur or DEFAULT_CURRENCY).upper()
+
+def specs_json(d: dict) -> str:
+    return json.dumps({k:v for k,v in d.items() if v is not None}, ensure_ascii=False, separators=(",", ":"))
+```
+
+---
+
+## 4) Pump parser — `services/parsers/pumps.py`
+```python
+from typing import List, Dict
+from .models import Pump, SupplierRow, PartRow
+from .normalize import flow_to_m3h, head_to_m, to_float, model_sku, currency_or_default, specs_json
+
+# Input sources: table rows (list[list[str]]) or a dict extracted elsewhere
+
+def parse_pump_table(rows: List[List[str]], url: str, vendor: str | None = None) -> Dict[str, List[dict]]:
+    if not rows: return {"suppliers": [], "parts": [], "report": {"status": "no_rows"}}
+    # Heuristic: find header row
+    headers = [c.lower() for c in rows[0]]
+    def col(name):
+        for i,h in enumerate(headers):
+            if name in h: return i
+        return None
+    i_model = col('model') or col('type') or 0
+    i_flow  = col('flow')
+    i_head  = col('head') or col('pressure')
+    i_power = col('power') or col('kw')
+    i_price = col('price')
+
+    suppliers, parts = [], []
+    for r in rows[1:]:
+        try:
+            model = (r[i_model] if i_model is not None and i_model < len(r) else r[0]).strip()
+            flow  = flow_to_m3h(r[i_flow]) if i_flow is not None and i_flow < len(r) else None
+            head  = head_to_m(r[i_head]) if i_head is not None and i_head < len(r) else None
+            power = to_float(r[i_power]) if i_power is not None and i_power < len(r) else None
+            price = to_float(r[i_price]) if i_price is not None and i_price < len(r) else None
+            pump = Pump(model=model, flow_m3h=flow, head_m=head, power_kw=power)
+            sku = model_sku(vendor or 'pump', model)
+
+            suppliers.append(SupplierRow(
+                sku=sku, name=f"{pump.model} Pump", brand=pump.brand, model=pump.model,
+                category="pump", url=url, currency=currency_or_default(None), price=price
+            ).model_dump())
+
+            parts.append(PartRow(
+                part_number=sku,
+                description=f"Centrifugal pump {pump.model}",
+                category="pump",
+                specs_json=specs_json({
+                    "flow_m3h": pump.flow_m3h,
+                    "head_m": pump.head_m,
+                    "power_kw": pump.power_kw,
+                }),
+                price=price, currency=currency_or_default(None), url=url, sku=sku,
+            ).model_dump())
+        except Exception as e:
+            continue
+    return {"suppliers": suppliers, "parts": parts, "report": {"status": "ok", "rows": len(suppliers)}}
+```
+
+---
+
+## 5) UV reactor parser — `services/parsers/uv.py`
+```python
+from typing import List, Dict
+from .models import UVReactor, SupplierRow, PartRow
+from .normalize import flow_to_m3h, to_float, model_sku, currency_or_default, specs_json
+
+
+def parse_uv_table(rows: List[List[str]], url: str, vendor: str | None = None) -> Dict[str, List[dict]]:
+    if not rows: return {"suppliers": [], "parts": [], "report": {"status": "no_rows"}}
+    headers = [c.lower() for c in rows[0]]
+    def col(*names):
+        for i,h in enumerate(headers):
+            for n in names:
+                if n in h: return i
+        return None
+    i_model = col('model','reactor') or 0
+    i_flow  = col('flow','capacity')
+    i_dose  = col('dose','mj/cm2','mj cm2')
+    i_lampw = col('lamp','w')
+    i_qty   = col('qty','lamps')
+    i_price = col('price')
+
+    suppliers, parts = [], []
+    for r in rows[1:]:
+        try:
+            model = (r[i_model] if i_model is not None and i_model < len(r) else r[0]).strip()
+            flow  = flow_to_m3h(r[i_flow]) if i_flow is not None and i_flow < len(r) else None
+            dose  = to_float(r[i_dose]) if i_dose is not None and i_dose < len(r) else None
+            lampw = int(to_float(r[i_lampw])) if i_lampw is not None and i_lampw < len(r) else None
+            qty   = int(to_float(r[i_qty])) if i_qty is not None and i_qty < len(r) else None
+            price = to_float(r[i_price]) if i_price is not None and i_price < len(r) else None
+
+            uv = UVReactor(model=model, flow_m3h=flow, dose_mj_cm2=dose, lamp_w=lampw, lamps_qty=qty)
+            sku = model_sku(vendor or 'uv', model)
+
+            suppliers.append(SupplierRow(
+                sku=sku, name=f"{uv.model} UV Reactor", brand=uv.brand, model=uv.model,
+                category="uv", url=url, currency=currency_or_default(None), price=price
+            ).model_dump())
+
+            parts.append(PartRow(
+                part_number=sku,
+                description=f"UV Reactor {uv.model}",
+                category="uv",
+                specs_json=specs_json({
+                    "flow_m3h": uv.flow_m3h,
+                    "dose_mj_cm2": uv.dose_mj_cm2,
+                    "lamp_w": uv.lamp_w,
+                    "lamps_qty": uv.lamps_qty,
+                }),
+                price=price, currency=currency_or_default(None), url=url, sku=sku,
+            ).model_dump())
+        except Exception:
+            continue
+    return {"suppliers": suppliers, "parts": parts, "report": {"status": "ok", "rows": len(suppliers)}}
+```
+
+---
+
+## 6) Parser dispatcher — `services/parsers/dispatcher.py`
+```python
+from typing import List, Dict, Optional
+from urllib.parse import urlparse
+from .pumps import parse_pump_table
+from .uv import parse_uv_table
+
+# Map domain keywords or categories to parser functions
+PARSER_MAP = {
+    "pump": parse_pump_table,
+    "uv": parse_uv_table,
+}
+
+# Option A: decide by category hint
+
+def parse_by_category(category: str, rows: List[List[str]], url: str, vendor: Optional[str] = None) -> Optional[Dict]:
+    for key, fn in PARSER_MAP.items():
+        if key in (category or '').lower():
+            return fn(rows, url, vendor)
+    return None
+
+# Option B: decide by domain keyword (simple heuristic)
+DOMAIN_HINTS = {
+    "pumps": "pump",
+    "uv": "uv",
+}
+
+def parse_by_domain(url: str, rows: List[List[str]]) -> Optional[Dict]:
+    host = urlparse(url).netloc.lower()
+    for k, cat in DOMAIN_HINTS.items():
+        if k in host:
+            return parse_by_category(cat, rows, url, vendor=host)
+    return None
+```
+
+---
+
+## 7) Wire into activities — modify `services/orchestrator/activities_research.py`
+Replace the body of `activity_struct_extract` with a **parser‑first, LLM‑fallback** strategy. Minimal diff shown; copy/paste this version if easier.
+
+```python
+async def activity_struct_extract(crawled: List[Dict]) -> Dict[str, List[Dict]]:
+    from services.parsers.dispatcher import parse_by_category, parse_by_domain
+    from services.parsers.models import SupplierRow, PartRow
+    import os, json, pathlib, yaml
+
+    # Load router
+    cfg = yaml.safe_load(open(pathlib.Path(__file__).with_name("config.yaml")))
+    router = ModelRouter(cfg)
+
+    suppliers, parts, evidence = [], [], []
+
+    for item in crawled:
+        url = item.get("url")
+        if item.get("status"):
+            continue
+        # Prefer structured rows from crawl (html_table or largest pdf table)
+        context_rows = item.get("html_table") or []
+        if not context_rows and item.get("pdf_tables"):
+            tables = sorted(item["pdf_tables"], key=lambda t: len(t.get("rows", [])), reverse=True)
+            context_rows = tables[0]["rows"] if tables else []
+
+        parsed = None
+        # 1) Try domain/category parser
+        parsed = parse_by_domain(url, context_rows)
+        if not parsed and context_rows:
+            # Heuristic: look for category keyword in header row
+            header = " ".join([c.lower() for c in (context_rows[0] if context_rows else [])])
+            cat = 'uv' if 'uv' in header or 'dose' in header else ('pump' if 'head' in header or 'kw' in header or 'flow' in header else None)
+            if cat:
+                parsed = parse_by_category(cat, context_rows, url)
+
+        if parsed and (parsed.get('suppliers') or parsed.get('parts')):
+            suppliers.extend(parsed.get('suppliers', []))
+            parts.extend(parsed.get('parts', []))
+            evidence.append({"url": url, "parser": True, "report": parsed.get('report')})
+            continue
+
+        # 2) Fallback to LLM
+        rows_preview = context_rows[:30]
+        prompt = (
+            "Extract supplier and part details as JSON arrays with keys: "
+            "suppliers:[{sku,name,brand,model,category,url,currency,price,availability,moq,lead_time,notes}], "
+            "parts:[{part_number,description,category,specs_json,unit,price,currency,supplier,sku,url,notes}].\n"
+            f"Source URL: {url}\nIf data not present, omit the field. Be concise. Rows:\n" + json.dumps(rows_preview)
+        )
+        try:
+            resp = await router.run("reason", prompt)
+            j = _safe_json(resp)
+            if j:
+                for s in j.get("suppliers", []):
+                    s["url"] = s.get("url") or url
+                    s["last_seen"] = _now_iso()
+                    suppliers.append(s)
+                for p in j.get("parts", []):
+                    p["url"] = p.get("url") or url
+                    p["last_seen"] = _now_iso()
+                    if isinstance(p.get("specs_json"), (dict, list)):
+                        p["specs_json"] = json.dumps(p["specs_json"]) 
+                    parts.append(p)
+                evidence.append({"url": url, "prompt": prompt[:2000], "raw": str(resp)[:2000]})
+        except Exception as e:
+            evidence.append({"url": url, "error": str(e)})
+
+    return {"suppliers": suppliers, "parts": parts, "evidence": evidence}
+```
+
+> **Note:** This keeps your existing CSV upsert + PR logic unchanged.
+
+---
+
+## 8) Optional: Plug into `recipes.yaml`
+Add a category hint per domain so the dispatcher selects a parser immediately (before LLM):
+
+**`services/crawler/recipes.yaml`** (append):
+```yaml
+"pumps.example.com":
+  category: pump
+"uvreactors.example.com":
+  category: uv
+```
+Then tweak `parse_by_domain` to read `recipes.yaml` (simple extension if you prefer recipes as the single source of truth).
+
+---
+
+## 9) Minimal tests (sanity) — optional
+Create **`services/parsers/_demo_test.py`**
+```python
+from services.parsers.pumps import parse_pump_table
+from services.parsers.uv import parse_uv_table
+
+pump_rows = [
+  ["Model","Flow (m3/h)","Head (m)","Power (kW)","Price"],
+  ["P-100","25","30","1.5","R 12,345"],
+]
+uv_rows = [
+  ["Reactor","Capacity","Dose (mJ/cm2)","Lamp (W)","Qty","Price"],
+  ["UV-200","20 m3/h","40","80","2","ZAR 28,900"],
+]
+
+print(parse_pump_table(pump_rows, url="https://pumps.example.com/P-100"))
+print(parse_uv_table(uv_rows, url="https://uv.example.com/UV-200"))
+```
+Run locally to verify objects are produced without errors.
+
+---
+
+## 10) Runbook
+1. **Install deps**: `pip install -r requirements.txt`
+2. **(Optional)**: add domain → category hints in `recipes.yaml`.
+3. **Start stack**: Temporal, worker, API (as usual).
+4. **Trigger**: `make research` (httpx) or `make research-pw` (Playwright) with real vendor URLs.
+5. **Review PR**: Confirm CSV diffs and evidence; confirm parser‑first behavior on supported domains.
+
+---
+
+## 11) Extending to new families/vendors
+- Duplicate a parser module (e.g., `valves.py`, `membranes.py`).
+- Add a new domain model + fields to `models.py`.
+- Register it in `dispatcher.py` and recipes hints.
+- Keep business logic out of crawlers; parsers should be **pure transforms** from rows → objects.
+
+---
+
+**End of Pack — paste files/edits as shown. Your Research Agent now produces schema‑validated, vendor‑aware data, with LLM as a safety net.**

@@ -1,0 +1,262 @@
+{
+  "pumps": {
+    "grundfos": [
+      {
+        "name": "Grundfos CR 3-8",
+        "flow_rate_lpm": 120.0,
+        "head_meters": 45.0,
+        "power_kw": 2.2,
+        "efficiency_percent": 85.0,
+        "price_usd": 1250.00,
+        "supplier": "Grundfos",
+        "model_number": "CR3-8",
+        "specifications": {
+          "inlet_size": "2 inch",
+          "outlet_size": "1.5 inch",
+          "material": "Stainless Steel 316",
+          "max_temperature": 70,
+          "max_pressure": 25,
+          "certification": ["CE", "UL"]
+        }
+      },
+      {
+        "name": "Grundfos CR 5-12",
+        "flow_rate_lpm": 200.0,
+        "head_meters": 60.0,
+        "power_kw": 3.5,
+        "efficiency_percent": 87.0,
+        "price_usd": 1850.00,
+        "supplier": "Grundfos",
+        "model_number": "CR5-12",
+        "specifications": {
+          "inlet_size": "3 inch",
+          "outlet_size": "2 inch",
+          "material": "Stainless Steel 316",
+          "max_temperature": 70,
+          "max_pressure": 25,
+          "certification": ["CE", "UL"]
+        }
+      }
+    ],
+    "xylem": [
+      {
+        "name": "Xylem Lowara e-SV 33",
+        "flow_rate_lpm": 200.0,
+        "head_meters": 35.0,
+        "power_kw": 3.0,
+        "efficiency_percent": 82.0,
+        "price_usd": 1450.00,
+        "supplier": "Xylem",
+        "model_number": "e-SV33",
+        "specifications": {
+          "inlet_size": "3 inch",
+          "outlet_size": "2 inch",
+          "material": "Cast Iron",
+          "max_temperature": 80,
+          "max_pressure": 16,
+          "certification": ["CE", "NSF"]
+        }
+      }
+    ]
+  },
+  "uv_reactors": {
+    "trojan": [
+      {
+        "name": "Trojan UV3000Plus",
+        "flow_rate_lpm": 500.0,
+        "uv_dose_mj_cm2": 40.0,
+        "power_kw": 1.8,
+        "lamp_count": 12,
+        "price_usd": 8500.00,
+        "supplier": "Trojan Technologies",
+        "model_number": "UV3000Plus",
+        "specifications": {
+          "inlet_size": "6 inch",
+          "outlet_size": "6 inch",
+          "lamp_type": "Low Pressure Amalgam",
+          "reactor_material": "Stainless Steel 316L",
+          "controller": "TrojanUVPhox",
+          "lamp_life_hours": 12000,
+          "operating_temp_range": "5-40°C",
+          "max_pressure_bar": 10
+        }
+      },
+      {
+        "name": "Trojan UV5000",
+        "flow_rate_lpm": 800.0,
+        "uv_dose_mj_cm2": 45.0,
+        "power_kw": 2.5,
+        "lamp_count": 16,
+        "price_usd": 12200.00,
+        "supplier": "Trojan Technologies",
+        "model_number": "UV5000",
+        "specifications": {
+          "inlet_size": "8 inch",
+          "outlet_size": "8 inch",
+          "lamp_type": "Low Pressure Amalgam",
+          "reactor_material": "Stainless Steel 316L",
+          "controller": "TrojanUVPhox",
+          "lamp_life_hours": 12000,
+          "operating_temp_range": "5-40°C",
+          "max_pressure_bar": 10
+        }
+      }
+    ],
+    "wedeco": [
+      {
+        "name": "Wedeco Spektron 15",
+        "flow_rate_lpm": 300.0,
+        "uv_dose_mj_cm2": 35.0,
+        "power_kw": 1.2,
+        "lamp_count": 8,
+        "price_usd": 6200.00,
+        "supplier": "Xylem",
+        "model_number": "Spektron15",
+        "specifications": {
+          "inlet_size": "4 inch",
+          "outlet_size": "4 inch",
+          "lamp_type": "Medium Pressure",
+          "reactor_material": "Stainless Steel 304",
+          "controller": "Wedeco Control",
+          "lamp_life_hours": 8000,
+          "operating_temp_range": "5-50°C",
+          "max_pressure_bar": 16
+        }
+      }
+    ]
+  },
+  "suppliers": {
+    "grundfos": {
+      "name": "Grundfos",
+      "website": "https://www.grundfos.com",
+      "domain": "grundfos.com",
+      "categories": ["pumps", "water_treatment"],
+      "contact": {
+        "email": "sales@grundfos.com",
+        "phone": "+1-800-GRUNDFOS"
+      },
+      "regions": ["North America", "Europe", "Asia"]
+    },
+    "xylem": {
+      "name": "Xylem Inc.",
+      "website": "https://www.xylem.com",
+      "domain": "xylem.com",
+      "categories": ["pumps", "uv_reactors", "water_treatment"],
+      "contact": {
+        "email": "info@xylem.com",
+        "phone": "+1-914-323-5700"
+      },
+      "regions": ["Global"]
+    },
+    "trojan": {
+      "name": "Trojan Technologies",
+      "website": "https://www.trojanuv.com",
+      "domain": "trojanuv.com",
+      "categories": ["uv_reactors", "disinfection"],
+      "contact": {
+        "email": "info@trojanuv.com",
+        "phone": "+1-519-457-3400"
+      },
+      "regions": ["North America", "Europe"]
+    }
+  },
+  "test_scenarios": {
+    "parser_dispatch": [
+      {
+        "url": "https://www.grundfos.com/products/pumps",
+        "expected_parser": "pumps",
+        "expected_supplier": "Grundfos"
+      },
+      {
+        "url": "https://www.trojanuv.com/systems",
+        "expected_parser": "uv",
+        "expected_supplier": "Trojan Technologies"
+      },
+      {
+        "url": "https://www.xylem.com/en-us/products-services/pumps/",
+        "expected_parser": "pumps",
+        "expected_supplier": "Xylem"
+      },
+      {
+        "url": "https://unknown-supplier.com/products",
+        "expected_parser": "llm_fallback",
+        "expected_supplier": "Unknown"
+      }
+    ],
+    "error_cases": [
+      {
+        "scenario": "empty_html",
+        "html": "<html></html>",
+        "expected_result": []
+      },
+      {
+        "scenario": "malformed_table",
+        "html": "<table><tr><td>incomplete",
+        "expected_error": "ParserError"
+      },
+      {
+        "scenario": "network_timeout",
+        "url": "https://timeout-test.com",
+        "expected_error": "TimeoutError"
+      }
+    ],
+    "edge_cases": [
+      {
+        "scenario": "mixed_units",
+        "data": {
+          "flow_rate": "120 L/min",
+          "head": "45 meters",
+          "power": "2200 W"
+        },
+        "expected_normalized": {
+          "flow_rate_lpm": 120.0,
+          "head_meters": 45.0,
+          "power_kw": 2.2
+        }
+      },
+      {
+        "scenario": "currency_conversion",
+        "data": {
+          "price": "€1,150.00"
+        },
+        "expected_normalized": {
+          "price_usd": 1250.00
+        }
+      }
+    ]
+  },
+  "api_test_data": {
+    "research_requests": [
+      {
+        "query": "centrifugal pumps",
+        "limit": 5,
+        "expected_status": 200
+      },
+      {
+        "query": "UV disinfection systems",
+        "limit": 10,
+        "expected_status": 200
+      },
+      {
+        "query": "",
+        "limit": 5,
+        "expected_status": 422
+      },
+      {
+        "query": "test query",
+        "limit": -1,
+        "expected_status": 422
+      }
+    ],
+    "price_monitor_requests": [
+      {
+        "create_pr": true,
+        "expected_status": 200
+      },
+      {
+        "create_pr": false,
+        "expected_status": 200
+      }
+    ]
+  }
+}

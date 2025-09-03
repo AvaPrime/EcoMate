@@ -1,0 +1,295 @@
+{
+  "research_workflow": {
+    "success": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "X-Request-ID": "test-request-123"
+      },
+      "body": {
+        "workflow_id": "wf_research_12345",
+        "status": "running",
+        "query": "centrifugal pumps",
+        "limit": 5,
+        "created_at": "2024-01-15T10:30:00Z",
+        "estimated_completion": "2024-01-15T10:35:00Z",
+        "results_url": "/api/v1/workflows/wf_research_12345/results"
+      }
+    },
+    "validation_error": {
+      "status_code": 422,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "detail": [
+          {
+            "loc": ["body", "query"],
+            "msg": "field required",
+            "type": "value_error.missing"
+          }
+        ]
+      }
+    },
+    "completed_results": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "workflow_id": "wf_research_12345",
+        "status": "completed",
+        "results": [
+          {
+            "name": "Grundfos CR 3-8",
+            "supplier": "Grundfos",
+            "category": "pump",
+            "flow_rate_lpm": 120.0,
+            "head_meters": 45.0,
+            "power_kw": 2.2,
+            "efficiency_percent": 85.0,
+            "price_usd": 1250.00,
+            "source_url": "https://www.grundfos.com/products/cr3-8",
+            "scraped_at": "2024-01-15T10:32:15Z"
+          },
+          {
+            "name": "Xylem Lowara e-SV 33",
+            "supplier": "Xylem",
+            "category": "pump",
+            "flow_rate_lpm": 200.0,
+            "head_meters": 35.0,
+            "power_kw": 3.0,
+            "efficiency_percent": 82.0,
+            "price_usd": 1450.00,
+            "source_url": "https://www.xylem.com/products/e-sv33",
+            "scraped_at": "2024-01-15T10:33:22Z"
+          }
+        ],
+        "total_found": 2,
+        "completed_at": "2024-01-15T10:34:45Z"
+      }
+    }
+  },
+  "price_monitoring": {
+    "success": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "X-Request-ID": "test-monitor-456"
+      },
+      "body": {
+        "workflow_id": "wf_monitor_67890",
+        "status": "running",
+        "create_pr": true,
+        "created_at": "2024-01-15T11:00:00Z",
+        "estimated_completion": "2024-01-15T11:15:00Z",
+        "monitored_products": 150,
+        "results_url": "/api/v1/workflows/wf_monitor_67890/results"
+      }
+    },
+    "completed_with_changes": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "workflow_id": "wf_monitor_67890",
+        "status": "completed",
+        "create_pr": true,
+        "price_changes": [
+          {
+            "product_id": "prod_123",
+            "name": "Grundfos CR 3-8",
+            "supplier": "Grundfos",
+            "old_price_usd": 1250.00,
+            "new_price_usd": 1195.00,
+            "change_percent": -4.4,
+            "detected_at": "2024-01-15T11:12:30Z",
+            "source_url": "https://www.grundfos.com/products/cr3-8"
+          },
+          {
+            "product_id": "prod_456",
+            "name": "Trojan UV3000Plus",
+            "supplier": "Trojan Technologies",
+            "old_price_usd": 8500.00,
+            "new_price_usd": 8750.00,
+            "change_percent": 2.9,
+            "detected_at": "2024-01-15T11:14:15Z",
+            "source_url": "https://www.trojanuv.com/products/uv3000plus"
+          }
+        ],
+        "pull_request": {
+          "number": 42,
+          "title": "Price Updates - 2 products changed",
+          "url": "https://github.com/ecomate/product-data/pull/42",
+          "created_at": "2024-01-15T11:13:45Z"
+        },
+        "summary": {
+          "total_monitored": 150,
+          "price_changes": 2,
+          "avg_change_percent": -0.75
+        },
+        "completed_at": "2024-01-15T11:14:30Z"
+      }
+    },
+    "no_changes": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "workflow_id": "wf_monitor_67891",
+        "status": "completed",
+        "create_pr": false,
+        "price_changes": [],
+        "summary": {
+          "total_monitored": 150,
+          "price_changes": 0,
+          "avg_change_percent": 0.0
+        },
+        "completed_at": "2024-01-15T11:05:20Z"
+      }
+    }
+  },
+  "workflow_status": {
+    "running": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "workflow_id": "wf_test_12345",
+        "status": "running",
+        "progress": {
+          "current_step": "scraping",
+          "completed_steps": 2,
+          "total_steps": 5,
+          "percent_complete": 40
+        },
+        "started_at": "2024-01-15T10:30:00Z",
+        "estimated_completion": "2024-01-15T10:35:00Z"
+      }
+    },
+    "completed": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "workflow_id": "wf_test_12345",
+        "status": "completed",
+        "progress": {
+          "current_step": "finished",
+          "completed_steps": 5,
+          "total_steps": 5,
+          "percent_complete": 100
+        },
+        "started_at": "2024-01-15T10:30:00Z",
+        "completed_at": "2024-01-15T10:34:45Z",
+        "duration_seconds": 285
+      }
+    },
+    "failed": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "workflow_id": "wf_test_12345",
+        "status": "failed",
+        "error": {
+          "code": "SCRAPING_ERROR",
+          "message": "Failed to parse product data from supplier website",
+          "details": {
+            "url": "https://example.com/products",
+            "http_status": 404,
+            "retry_count": 3
+          }
+        },
+        "started_at": "2024-01-15T10:30:00Z",
+        "failed_at": "2024-01-15T10:32:15Z",
+        "duration_seconds": 135
+      }
+    },
+    "not_found": {
+      "status_code": 404,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "detail": "Workflow not found"
+      }
+    }
+  },
+  "health_check": {
+    "healthy": {
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": "healthy",
+        "version": "1.0.0",
+        "timestamp": "2024-01-15T12:00:00Z",
+        "services": {
+          "database": "healthy",
+          "temporal": "healthy",
+          "minio": "healthy"
+        },
+        "uptime_seconds": 86400
+      }
+    },
+    "unhealthy": {
+      "status_code": 503,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": "unhealthy",
+        "version": "1.0.0",
+        "timestamp": "2024-01-15T12:00:00Z",
+        "services": {
+          "database": "healthy",
+          "temporal": "unhealthy",
+          "minio": "healthy"
+        },
+        "errors": [
+          "Temporal service connection timeout"
+        ]
+      }
+    }
+  },
+  "error_responses": {
+    "internal_server_error": {
+      "status_code": 500,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "detail": "Internal server error",
+        "error_id": "err_12345",
+        "timestamp": "2024-01-15T12:00:00Z"
+      }
+    },
+    "rate_limit": {
+      "status_code": 429,
+      "headers": {
+        "Content-Type": "application/json",
+        "Retry-After": "60"
+      },
+      "body": {
+        "detail": "Rate limit exceeded",
+        "retry_after": 60
+      }
+    },
+    "unauthorized": {
+      "status_code": 401,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "detail": "Authentication required"
+      }
+    }
+  }
+}
