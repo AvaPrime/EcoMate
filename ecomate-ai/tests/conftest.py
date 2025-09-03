@@ -9,6 +9,18 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+# Import factories for test data creation
+from tests.factories import (
+    create_test_supplier, create_test_product, create_test_proposal,
+    create_test_maintenance_schedule, create_test_compliance_record,
+    create_test_telemetry_data, create_test_workflow_execution,
+    create_realistic_pump_catalog, create_realistic_uv_catalog
+)
 
 # Test configuration
 pytest_plugins = ["pytest_asyncio"]
@@ -21,6 +33,21 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     asyncio.set_event_loop(loop)
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="session")
+async def app():
+    """Create a FastAPI app instance for testing."""
+    # Import here to ensure environment variables are set first
+    from services.api.main import app as fastapi_app
+    yield fastapi_app
+
+
+@pytest.fixture(scope="session")
+async def client(app):
+    """Create an async test client for the app."""
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
 
 
 @pytest.fixture(scope="session")
@@ -268,6 +295,126 @@ def sample_api_client() -> TestClient:
     # Import here to avoid circular imports
     from services.api.main import app
     return TestClient(app)
+
+
+@pytest.fixture(scope="session")
+def test_database_url() -> str:
+    """Test database URL for integration tests."""
+    return "sqlite:///:memory:"
+
+
+@pytest.fixture(scope="session")
+def test_engine(test_database_url):
+    """Create test database engine."""
+    engine = create_engine(
+        test_database_url,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False
+    )
+    return engine
+
+
+@pytest.fixture(scope="session")
+def test_session_factory(test_engine):
+    """Create test session factory."""
+    return sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+
+@pytest.fixture
+def test_db_session(test_engine, test_session_factory):
+    """Create test database session with automatic cleanup."""
+    # Note: This would need actual database models imported
+    # Base.metadata.create_all(bind=test_engine)
+    
+    session = test_session_factory()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+
+
+@pytest.fixture
+def api_client_with_auth(sample_api_client) -> TestClient:
+    """API client with authentication headers."""
+    sample_api_client.headers.update({
+        "Authorization": "Bearer test_token",
+        "Content-Type": "application/json"
+    })
+    return sample_api_client
+
+
+@pytest.fixture
+def mock_redis_client() -> Mock:
+    """Mock Redis client for caching tests."""
+    client = Mock()
+    client.get.return_value = None
+    client.set.return_value = True
+    client.delete.return_value = 1
+    client.exists.return_value = False
+    client.expire.return_value = True
+    client.flushdb.return_value = True
+    return client
+
+
+@pytest.fixture
+def mock_external_apis() -> Dict[str, Mock]:
+    """Mock external API responses."""
+    return {
+        "google_maps": Mock(
+            geocode=Mock(return_value={
+                "results": [{
+                    "geometry": {
+                        "location": {"lat": 40.7128, "lng": -74.0060}
+                    },
+                    "formatted_address": "New York, NY, USA"
+                }]
+            })
+        ),
+        "weather_api": Mock(
+            get_current_weather=Mock(return_value={
+                "temperature": 22.5,
+                "humidity": 65,
+                "conditions": "partly_cloudy"
+            })
+        ),
+        "supplier_api": Mock(
+            get_products=Mock(return_value={
+                "products": create_realistic_pump_catalog(10)
+            })
+        )
+    }
+
+
+@pytest.fixture
+def test_data_factories() -> Dict[str, Any]:
+    """Provide access to all test data factories."""
+    return {
+        "supplier": create_test_supplier,
+        "product": create_test_product,
+        "proposal": create_test_proposal,
+        "maintenance": create_test_maintenance_schedule,
+        "compliance": create_test_compliance_record,
+        "telemetry": create_test_telemetry_data,
+        "workflow": create_test_workflow_execution,
+        "pump_catalog": create_realistic_pump_catalog,
+        "uv_catalog": create_realistic_uv_catalog
+    }
+
+
+@pytest.fixture
+def sample_integration_data() -> Dict[str, List[Dict[str, Any]]]:
+    """Sample data for integration tests."""
+    return {
+        "suppliers": [create_test_supplier() for _ in range(5)],
+        "pumps": create_realistic_pump_catalog(20),
+        "uv_reactors": create_realistic_uv_catalog(10),
+        "proposals": [create_test_proposal() for _ in range(8)],
+        "maintenance_schedules": [create_test_maintenance_schedule() for _ in range(15)],
+        "compliance_records": [create_test_compliance_record() for _ in range(12)],
+        "telemetry_data": [create_test_telemetry_data() for _ in range(100)]
+    }
 
 
 @pytest.fixture
