@@ -1,0 +1,297 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+            if [[ $VERSION =~ -[a-zA-Z] ]]; then
+              IS_PRERELEASE="true"
+            else
+              IS_PRERELEASE="false"
+            fi
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION (prerelease: $IS_PRERELEASE)"
+
+  test:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Test Documentation Build
+        run: |
+          pip install -r requirements.txt
+          mkdocs build --strict
+      
+      - name: Test AI Services
+        run: |
+          cd ecomate-ai
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pytest tests/unit/ -v
+
+  build-artifacts:
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-latex-base texlive-fonts-recommended texlive-latex-extra
+      
+      - name: Build Documentation Site
+        run: |
+          mkdocs build --strict
+          tar -czf ecomate-docs-${{ needs.validate.outputs.version }}.tar.gz -C site .
+      
+      - name: Generate PDF Documentation
+        run: |
+          if command -v pandoc &> /dev/null; then
+            find docs -name "*.md" -exec pandoc {} -o {}.pdf \;
+            tar -czf ecomate-docs-pdf-${{ needs.validate.outputs.version }}.tar.gz docs/**/*.pdf
+          else
+            echo "Pandoc not available, skipping PDF generation"
+          fi
+      
+      - name: Package AI Services
+        run: |
+          cd ecomate-ai
+          tar -czf ../ecomate-ai-${{ needs.validate.outputs.version }}.tar.gz \
+            --exclude='.venv' \
+            --exclude='__pycache__' \
+            --exclude='.pytest_cache' \
+            --exclude='*.pyc' \
+            .
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            ecomate-docs-${{ needs.validate.outputs.version }}.tar.gz
+            ecomate-docs-pdf-${{ needs.validate.outputs.version }}.tar.gz
+            ecomate-ai-${{ needs.validate.outputs.version }}.tar.gz
+
+  generate-changelog:
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG="${{ needs.validate.outputs.version }}"
+          
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+          
+          # Generate changelog
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)")
+          fi
+          
+          # Create formatted changelog
+          cat > RELEASE_CHANGELOG.md << EOF
+          ## What's Changed
+          
+          $CHANGELOG
+          
+          ## Documentation
+          
+          - 📚 [Live Documentation](https://your-org.github.io/ecomate-docs/)
+          - 🔧 [AI Services API](http://localhost:8080/docs) (when running locally)
+          - 📖 [Contributing Guidelines](CONTRIBUTING.md)
+          
+          ## Installation
+          
+          ### Documentation Site
+          \`\`\`bash
+          # Download and extract
+          wget https://github.com/your-org/ecomate/releases/download/$CURRENT_TAG/ecomate-docs-$CURRENT_TAG.tar.gz
+          tar -xzf ecomate-docs-$CURRENT_TAG.tar.gz
+          
+          # Or clone and build
+          git clone https://github.com/your-org/ecomate.git
+          cd ecomate
+          git checkout $CURRENT_TAG
+          pip install -r requirements.txt
+          mkdocs serve
+          \`\`\`
+          
+          ### AI Services Platform
+          \`\`\`bash
+          # Download and extract
+          wget https://github.com/your-org/ecomate/releases/download/$CURRENT_TAG/ecomate-ai-$CURRENT_TAG.tar.gz
+          tar -xzf ecomate-ai-$CURRENT_TAG.tar.gz
+          cd ecomate-ai
+          
+          # Set up environment
+          cp .env.example .env
+          # Edit .env with your configuration
+          
+          # Start services
+          docker compose up -d
+          pip install -r requirements.txt
+          python services/orchestrator/worker.py
+          \`\`\`
+          
+          ## System Requirements
+          
+          - Python 3.11+
+          - Docker and Docker Compose (for AI services)
+          - 4GB RAM minimum (8GB recommended)
+          - PostgreSQL 15+ (for AI services)
+          
+          ## Support
+          
+          - 🐛 [Report Issues](https://github.com/your-org/ecomate/issues)
+          - 💬 [Discussions](https://github.com/your-org/ecomate/discussions)
+          - 📧 [Security Issues](mailto:security@ecomate.com)
+          EOF
+          
+          # Set output for next job
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat RELEASE_CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [validate, test, build-artifacts, generate-changelog]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+      
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.validate.outputs.version }}
+          release_name: EcoMate ${{ needs.validate.outputs.version }}
+          body: ${{ needs.generate-changelog.outputs.changelog }}
+          draft: false
+          prerelease: ${{ needs.validate.outputs.is_prerelease }}
+      
+      - name: Upload Documentation Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ecomate-docs-${{ needs.validate.outputs.version }}.tar.gz
+          asset_name: ecomate-docs-${{ needs.validate.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+      
+      - name: Upload PDF Documentation
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ecomate-docs-pdf-${{ needs.validate.outputs.version }}.tar.gz
+          asset_name: ecomate-docs-pdf-${{ needs.validate.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+        continue-on-error: true
+      
+      - name: Upload AI Services Archive
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ecomate-ai-${{ needs.validate.outputs.version }}.tar.gz
+          asset_name: ecomate-ai-${{ needs.validate.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    needs: [validate, create-release]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Build documentation
+        run: |
+          pip install -r requirements.txt
+          mkdocs build --strict
+      
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
