@@ -1,0 +1,30 @@
+# Global ownership
+* @ecomate-platform/core-team
+
+# Documentation
+*.md @ecomate-platform/docs-team
+docs/ @ecomate-platform/docs-team
+mkdocs.yml @ecomate-platform/docs-team
+
+# AI Services
+ecomate-ai/ @ecomate-platform/ai-team
+services/ @ecomate-platform/backend-team
+
+# Infrastructure
+.github/ @ecomate-platform/devops-team
+Dockerfile* @ecomate-platform/devops-team
+docker-compose*.yml @ecomate-platform/devops-team
+tools/ @ecomate-platform/devops-team
+
+# Configuration
+*.env* @ecomate-platform/security-team
+requirements.txt @ecomate-platform/backend-team
+package*.json @ecomate-platform/frontend-team
+
+# Security
+SECURITY.md @ecomate-platform/security-team
+LICENSE* @ecomate-platform/legal-team
+
+# Compliance
+services/compliance/ @ecomate-platform/compliance-team
+*compliance* @ecomate-platform/compliance-team
