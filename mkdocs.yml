@@ -1,63 +1,256 @@
-site_name: EcoMate Docs
-repo_url: https://github.com/YOURORG/ecomate-docs
+site_name: EcoMate Documentation
+site_description: Comprehensive documentation for EcoMate's sustainable wastewater treatment solutions
+site_author: EcoMate Technologies
+site_url: https://docs.ecomate.co.za
+repo_url: https://github.com/ecomate/ecomate-docs
+repo_name: ecomate/ecomate-docs
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2025 EcoMate Technologies. All rights reserved.
+
 theme:
   name: material
+  language: en
+  logo: assets/images/ecomate-logo.svg
+  favicon: assets/images/favicon.ico
   palette:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: blue
-      accent: blue
+      primary: teal
+      accent: light-blue
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: blue
-      accent: blue
+      primary: teal
+      accent: light-blue
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.tabs
-    - navigation.sections
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
     - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
     - toc.integrate
-    - palette.toggle
   custom_dir: overrides
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/squirrel-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
+
+extra:
+  version:
+    provider: mike
+    default: stable
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ecomate
+      name: EcoMate on GitHub
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/ecomate-technologies
+      name: EcoMate on LinkedIn
+    - icon: fontawesome/solid/globe
+      link: https://ecomate.co.za
+      name: EcoMate Website
+    - icon: fontawesome/solid/envelope
+      link: mailto:info@ecomate.co.za
+      name: Contact EcoMate
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >
+            Thanks for your feedback! Help us improve this page by
+            <a href="https://github.com/ecomate/ecomate-docs/issues/new/?title=[Feedback]+{title}+-+{url}" target="_blank" rel="noopener">telling us what you need</a>.
+
 extra_css:
   - assets/stylesheets/extra.css
+  - assets/stylesheets/custom.css
 
 extra_javascript:
   - assets/javascripts/theme-toggle.js
+  - assets/javascripts/feedback.js
 
 markdown_extensions:
+  - abbr
   - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
   - toc:
       permalink: true
+      title: On this page
+      toc_depth: 3
+  - tables
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: ecomate
+      repo: ecomate-docs
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
 plugins:
-  - search
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\b(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - git-committers:
+      repository: ecomate/ecomate-docs
+      branch: main
+  - tags:
+      tags_file: tags.md
   # - with-pdf:
   #     output_path: site/pdf/ecomate-docs.pdf
+  #     cover_title: EcoMate Documentation
+  #     cover_subtitle: Sustainable Wastewater Treatment Solutions
+  #     author: EcoMate Technologies
+  #     copyright: Copyright © 2025 EcoMate Technologies
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      slide_effect: slide
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
+      skip_classes:
+        - custom-skip-class-name
+      auto_caption: false
+      caption_position: bottom
 nav:
   - Home: index.md
+  - Getting Started:
+    - Quick Start Guide: getting-started/quick-start.md
+    - System Requirements: getting-started/requirements.md
+    - Installation Overview: getting-started/installation.md
   - Products:
-    - Wastewater:
+    - Wastewater Treatment:
       - Overview: products/wastewater/overview.md
-      - Technical Spec: products/wastewater/technical-spec.md
+      - Technical Specifications: products/wastewater/technical-spec.md
       - Installation Guide: products/wastewater/installation-guide.md
       - Maintenance Schedule: products/wastewater/maintenance-schedule.md
       - Troubleshooting: products/wastewater/troubleshooting.md
-      - Compliance: products/wastewater/compliance.md
+      - Compliance & Standards: products/wastewater/compliance.md
+    - System Variants:
+      - CAP Systems: products/variants/cap-systems.md
+      - MBBR Systems: products/variants/mbbr-systems.md
+      - MBR Systems: products/variants/mbr-systems.md
+      - Off-Grid Solutions: products/variants/off-grid.md
   - Operations:
-    - Standard Operating Procedures: operations/standard-operating-procedures.md
     - Service Contracts: operations/service-contracts.md
-  - Suppliers:
-    - Supplier DB: suppliers/supplier-database.md
-    - RFQ Template: suppliers/rfq-template.md
-  - Marketing:
-    - Go-To-Market: marketing/gtm.md
-    - Sales Deck Notes: marketing/sales-deck-notes.md
+    - Standard Operating Procedures: operations/sops.md
+    - Performance Monitoring: operations/monitoring.md
+    - Emergency Response: operations/emergency-response.md
+    - Quality Assurance: operations/quality-assurance.md
+  - Marketing & Sales:
+    - Go-to-Market Strategy: marketing/gtm.md
+    - Sales Presentation Guide: marketing/sales-deck-notes.md
+    - Customer Case Studies: marketing/case-studies.md
+    - Competitive Analysis: marketing/competitive-analysis.md
+    - Brand Guidelines: marketing/brand-guidelines.md
+  - Suppliers & Partners:
+    - Vendor Management: suppliers/vendor-management.md
+    - Quality Standards: suppliers/quality-standards.md
+    - Procurement Guidelines: suppliers/procurement.md
+    - Partner Network: suppliers/partners.md
+  - API Documentation:
+    - API Overview: api/overview.md
+    - Authentication: api/authentication.md
+    - Endpoints Reference: api/endpoints.md
+    - Code Examples: api/examples.md
+    - Troubleshooting: api/troubleshooting.md
+  - Support:
+    - FAQ: support/faq.md
+    - Contact Information: support/contact.md
+    - Training Resources: support/training.md
+    - System Updates: support/updates.md
+  - About:
+    - Company Overview: about/company.md
+    - Technology Vision: about/technology.md
+    - Sustainability Commitment: about/sustainability.md
+    - Release Notes: about/changelog.md

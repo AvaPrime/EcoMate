@@ -1,6 +1,10 @@
 # RFQ Template
 
-> Standardized Request for Quotation template for supplier procurement.
+> **Version**: 1.0  
+> **Last Updated**: January 2024  
+> **Maintainer**: Procurement Team
+
+Standardized Request for Quotation template for supplier procurement.
 
 ## RFQ Header
 - **Project**: [Project Name/Number]

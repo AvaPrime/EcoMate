@@ -1,6 +1,10 @@
 # Supplier Database
 
-> Comprehensive directory of approved suppliers, vendors, and service providers.
+> **Version**: 1.0  
+> **Last Updated**: January 2024  
+> **Maintainer**: Procurement Team
+
+Comprehensive directory of approved suppliers, vendors, and service providers.
 
 ## Categories
 

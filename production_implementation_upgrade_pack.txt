@@ -1,0 +1,540 @@
+# EcoMate Platform — Production Implementation Upgrade Pack
+
+This pack turns the roadmap scaffold into **production-grade** components. It replaces heuristic stubs with domain logic, adds PDF rendering with WeasyPrint, hardens compliance and maintenance, upgrades telemetry with baselines, and completes catalog normalizers. Copy files as shown; register new workflows/activities and routers where indicated.
+
+> Pattern: **parser‑first**, **LLM‑assist**, **PR‑governed**, **typed models**.
+
+---
+
+## 0) Install & Env
+Append to `requirements.txt`:
+```txt
+weasyprint==62.3
+jinja2==3.1.4
+python-dateutil==2.9.0.post0
+pandas==2.2.2
+```
+
+Add to `.env.example`:
+```env
+# Finance & tax
+VAT_RATE=0.15
+OVERHEAD_RATE=0.10      # company overhead on direct costs
+CONTINGENCY_RATE=0.07   # risk buffer
+WACC=0.14               # for ROI models
+
+# Proposal rendering
+BRAND_PRIMARY=#0EA5E9
+BRAND_SECONDARY=#0F766E
+PROPOSAL_FOOTER="EcoMate • Sustainable Water & Energy Systems"
+```
+
+---
+
+## 1) Proposal Agent — Domain BOM, Cost Model, Branded PDF
+
+### 1.1 Selector rules (YAML)
+Create `services/proposal/selectors.yaml`:
+```yaml
+wastewater:
+  safety_factor: 1.15
+  capacity_to_units:
+    - threshold_lpd: 20000
+      units:
+        - sku: BLOWER-055
+          each_per_lpd: 1/10000   # 1 blower per 10k LPD (rounded up)
+        - sku: TANK-10000L
+          each_per_lpd: 1/4000    # storage
+        - sku: UV-REACTOR-01
+          fixed_qty: 1
+    - threshold_lpd: 60000
+      units:
+        - sku: BLOWER-110
+          each_per_lpd: 1/15000
+        - sku: TANK-10000L
+          each_per_lpd: 1/5000
+        - sku: UV-REACTOR-02
+          fixed_qty: 1
+heating:
+  safety_factor: 1.10
+  capacity_to_units:
+    - threshold_lpd: 5000
+      units:
+        - sku: HEATPUMP-7KW
+          each_per_lpd: 1/2500
+        - sku: GGEYSER-200L
+          each_per_lpd: 1/200
+```
+
+> Extend with vendor SKUs you actually stock; quantities support `fixed_qty` or `each_per_lpd` expressions.
+
+### 1.2 `bom_engine.py` — spec→BOM with scaling
+Replace contents:
+```python
+import math, csv, yaml
+from typing import List
+from .models import SystemSpec, BOMItem
+
+SUPPLIERS = "data/suppliers.csv"
+RULES = "services/proposal/selectors.yaml"
+
+_prices = None
+
+def _load_prices():
+    global _prices
+    if _prices is not None:
+        return _prices
+    _prices = {}
+    try:
+        with open(SUPPLIERS, newline='', encoding='utf-8') as f:
+            for r in csv.DictReader(f):
+                sku = (r.get('sku') or '').upper()
+                if sku:
+                    _prices[sku] = float(r.get('price') or 0)
+    except FileNotFoundError:
+        pass
+    return _prices
+
+def _price(sku: str) -> float:
+    return _load_prices().get((sku or '').upper(), 0.0)
+
+def base_bom_for(spec: SystemSpec) -> List[BOMItem]:
+    with open(RULES, 'r', encoding='utf-8') as f:
+        rules = yaml.safe_load(f) or {}
+    family = rules.get(spec.type)
+    if not family:
+        return []
+    cap = spec.capacity_lpd or 0
+    sf = float(family.get('safety_factor', 1.0))
+    cap_eff = cap * sf
+
+    # choose the smallest threshold that is >= capacity
+    tiers = sorted(family.get('capacity_to_units', []), key=lambda x: x.get('threshold_lpd', 0))
+    tier = None
+    for t in tiers:
+        if cap_eff <= t.get('threshold_lpd', 0):
+            tier = t
+            break
+    tier = tier or (tiers[-1] if tiers else None)
+    items: List[BOMItem] = []
+    for u in (tier.get('units') if tier else []):
+        sku = u['sku']
+        qty = 0
+        if 'fixed_qty' in u:
+            qty = float(u['fixed_qty'])
+        elif 'each_per_lpd' in u and cap_eff > 0:
+            # expression like 1/10000
+            num, den = [s.strip() for s in str(u['each_per_lpd']).split('/')]
+            ratio = float(num) / float(den)
+            qty = math.ceil(cap_eff * ratio)
+        if qty <= 0:
+            continue
+        items.append(BOMItem(sku=sku, description=sku, qty=qty, unit_price=_price(sku)))
+    return items
+```
+
+### 1.3 `cost_model.py` — task rates, overhead, contingency, VAT
+Replace contents:
+```python
+import os, math
+from .models import BOMItem, Quote
+
+LABOUR_RATE = float(os.getenv('LABOUR_RATE_ZAR', '450'))
+LOGI_RATE = float(os.getenv('LOGISTICS_RATE_ZAR_PER_KM', '18'))
+MARGIN = float(os.getenv('DEFAULT_MARGIN', '0.18'))
+VAT = float(os.getenv('VAT_RATE', '0.15'))
+OVERHEAD = float(os.getenv('OVERHEAD_RATE', '0.10'))
+CONT = float(os.getenv('CONTINGENCY_RATE', '0.07'))
+
+# naive task model; replace with per‑task durations later
+TASK_HOURS_PER_MAT = 0.12  # 12% of materials value converted to hours at labour rate
+
+def compute_quote(bom: list[BOMItem], distance_km: float) -> Quote:
+    materials = sum(i.qty * i.unit_price for i in bom)
+    labour_hours = max(8.0, TASK_HOURS_PER_MAT * (materials / max(LABOUR_RATE,1)))
+    labour = labour_hours * LABOUR_RATE
+    logistics = distance_km * LOGI_RATE
+
+    direct = materials + labour + logistics
+    overhead = direct * OVERHEAD
+    contingency = direct * CONT
+    pre_margin = direct + overhead + contingency
+    subtotal = pre_margin * (1 + MARGIN)
+    total = subtotal * (1 + VAT)
+
+    return Quote(
+        bom=bom,
+        materials_subtotal=round(materials,2),
+        labour=round(labour,2),
+        logistics=round(logistics,2),
+        opex_year1=round(0.03*materials,2),
+        total_before_margin=round(pre_margin,2),
+        total_quote=round(total,2),
+    )
+```
+
+### 1.4 Branded PDF with WeasyPrint
+Create `shared/pdf.py`:
+```python
+from weasyprint import HTML, CSS
+
+def md_to_pdf_bytes(md_text: str, primary: str = "#0EA5E9", secondary: str = "#0F766E") -> bytes:
+    # minimal markdown→HTML (you can swap in markdown2 if preferred)
+    import markdown
+    html_body = markdown.markdown(md_text, extensions=['tables'])
+    html = f"""
+    <html><head><meta charset='utf-8'>
+    <style>
+      body {{ font-family: Inter, Arial, sans-serif; }}
+      h1,h2,h3 {{ color: {primary}; }}
+      table {{ width: 100%; border-collapse: collapse; }}
+      th,td {{ border: 1px solid #e5e7eb; padding: 6px; font-size: 12px; }}
+      tfoot {{ color:#374151; font-size: 11px; margin-top: 8px; }}
+    </style>
+    </head><body>{html_body}<footer><hr/><div style='font-size:11px;color:#6b7280;'>EcoMate • Sustainable Water & Energy Systems</div></footer></body></html>
+    """
+    return HTML(string=html).write_pdf()
+```
+
+Update `services/proposal/render.py` to use WeasyPrint:
+```python
+from .models import ClientContext, SystemSpec, Quote
+from jinja2 import Template
+import os
+from shared.pdf import md_to_pdf_bytes
+
+TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates', 'proposal.md.j2')
+
+def render_proposal_md(client: ClientContext, spec: SystemSpec, quote: Quote) -> str:
+    with open(TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+        t = Template(f.read())
+    return t.render(client=client.model_dump(), spec=spec.model_dump(), quote=quote.model_dump())
+
+def render_pdf_from_md(md: str) -> bytes | None:
+    try:
+        return md_to_pdf_bytes(md)
+    except Exception:
+        return None
+```
+
+Update `activities_proposal.py` PR body to include artifact link (if any):
+```python
+# after put_bytes(...)
+pr_body = f"Automated proposal generated. PDF artifact: {url}" if pdf else "Automated proposal generated."
+open_pr(f"bot/proposal-{today}", f"Proposal: {ctx.name} ({today})", changes, body=pr_body)
+```
+
+> Ensure your `open_pr` helper accepts an optional `body` argument; if not, extend it.
+
+---
+
+## 2) Catalog Agent — Complete Normalizers
+
+Update `services/catalog/sync.py` to add WooCommerce/Medusa:
+```python
+from typing import List, Dict
+
+def normalize_shopify(ps: list[dict]) -> list[dict]:
+    out = []
+    for p in ps:
+        v = (p.get('variants') or [{}])[0]
+        out.append({
+            "sku": (v.get('sku') or str(p.get('id'))),
+            "title": p.get('title'),
+            "vendor": p.get('vendor'),
+            "price": float(v.get('price') or 0),
+            "currency": "ZAR",
+            "status": p.get('status','active'),
+            "url": p.get('handle'),
+            "image": ((p.get('images') or [{}])[0].get('src')),
+            "description": p.get('body_html'),
+            "tags": p.get('tags'),
+        })
+    return out
+
+def normalize_woocommerce(ps: list[dict]) -> list[dict]:
+    out = []
+    for p in ps:
+        out.append({
+            "sku": p.get('sku') or str(p.get('id')),
+            "title": p.get('name'),
+            "vendor": p.get('store','WooCommerce'),
+            "price": float(p.get('price') or 0),
+            "currency": p.get('currency') or 'ZAR',
+            "status": p.get('status'),
+            "url": p.get('permalink'),
+            "image": ((p.get('images') or [{}])[0].get('src')),
+            "description": p.get('description'),
+            "tags": ",".join(p.get('tags',[])) if isinstance(p.get('tags'), list) else p.get('tags'),
+        })
+    return out
+
+def normalize_medusa(ps: list[dict]) -> list[dict]:
+    out = []
+    for p in ps:
+        v = (p.get('variants') or [{}])[0]
+        prices = (v.get('prices') or [])
+        price = 0
+        if prices:
+            # take first price amount/100
+            price = float(prices[0].get('amount', 0)) / 100.0
+        out.append({
+            "sku": v.get('sku') or p.get('id'),
+            "title": p.get('title'),
+            "vendor": p.get('collection_id'),
+            "price": price,
+            "currency": (prices[0].get('currency_code','zar').upper() if prices else 'ZAR'),
+            "status": 'active' if p.get('status') == 'published' else p.get('status'),
+            "url": f"/products/{p.get('handle')}",
+            "image": ((p.get('images') or [{}])[0].get('url')),
+            "description": p.get('description'),
+            "tags": ",".join(p.get('tags',[])) if isinstance(p.get('tags'), list) else p.get('tags'),
+        })
+    return out
+```
+
+Update `activities_catalog.py` to select normalizer per connector and (optionally) push primary images to MinIO with `put_bytes`.
+
+---
+
+## 3) Maintenance Scheduler — Smart Plans
+
+Create `services/maintenance/service_rules.yaml`:
+```yaml
+common:
+  - task: Inspect blower bearings
+    interval_days: 180
+    usage_hours_trigger: 1500
+    env_risk: normal
+  - task: Replace UV lamps
+    interval_days: 540
+    usage_hours_trigger: 4000
+    env_risk: low
+coastal:
+  - task: Check corrosion on fittings
+    interval_days: 90
+    env_risk: high
+```
+
+Replace `services/maintenance/scheduler.py`:
+```python
+import csv, datetime, yaml
+from dateutil.parser import isoparse
+
+SCHEDULE_CSV = 'data/maintenance_schedule.csv'
+RULES_YAML = 'services/maintenance/service_rules.yaml'
+
+_def_rules = None
+
+def _rules():
+    global _def_rules
+    if _def_rules is None:
+        try:
+            with open(RULES_YAML,'r',encoding='utf-8') as f:
+                _def_rules = yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            _def_rules = {}
+    return _def_rules
+
+# last_service: ISO8601; usage_hours: cumulative
+
+def tasks_for(system_id: str, site_env: str = 'common', last_service: str | None = None, usage_hours: float | None = None):
+    rules = (_rules().get('common') or []) + (_rules().get(site_env) or [])
+    today = datetime.date.today()
+    out = []
+    for r in rules:
+        due_by_date = today + datetime.timedelta(days=int(r.get('interval_days', 180)))
+        if last_service:
+            try:
+                last = isoparse(last_service).date()
+                due_by_date = last + datetime.timedelta(days=int(r.get('interval_days', 180)))
+            except Exception:
+                pass
+        note = None
+        if usage_hours is not None and r.get('usage_hours_trigger'):
+            if usage_hours >= float(r['usage_hours_trigger']):
+                note = 'usage_triggered'
+        out.append({
+            'system_id': system_id,
+            'task': r['task'],
+            'due_date': due_by_date.isoformat(),
+            'priority': 'high' if r.get('env_risk') == 'high' else 'normal',
+            'notes': note
+        })
+    return out
+```
+
+Update `activities_maintenance.py` to accept `site_env`, `last_service`, `usage_hours` and pass to `tasks_for`.
+
+---
+
+## 4) Compliance Agent — Rule DSL & Evaluator
+
+Expand `services/compliance/rules/sans_water.yaml`:
+```yaml
+rules:
+  - key: uv_dose_mj_cm2
+    op: ">="
+    threshold: 40
+    message: "UV dose must be ≥ 40 mJ/cm²"
+  - key: storage_days
+    op: ">="
+    threshold: 1
+    message: "Treated water storage capacity must cover ≥ 1 day"
+```
+
+Add `services/compliance/rules/sans_geyser.yaml`:
+```yaml
+rules:
+  - key: has_tp_valve
+    op: "=="
+    threshold: true
+    message: "Geyser must include temperature/pressure safety valve"
+  - key: drip_tray_installed
+    op: "=="
+    threshold: true
+    message: "Geyser must be installed with compliant drip tray and drain"
+```
+
+Replace `services/compliance/engine.py`:
+```python
+import operator, yaml
+OPS = {">=": operator.ge, "<=": operator.le, ">": operator.gt, "<": operator.lt, "==": operator.eq, "!=": operator.ne}
+
+def load_rules(name: str) -> dict:
+    with open(f'services/compliance/rules/{name}.yaml','r',encoding='utf-8') as f:
+        return yaml.safe_load(f) or {}
+
+def evaluate(spec: dict, rules_doc: dict) -> list[dict]:
+    findings = []
+    for r in rules_doc.get('rules', []):
+        key, op, thr = r['key'], r['op'], r['threshold']
+        val = spec.get(key)
+        ok = False if val is None else OPS[op](val, thr)
+        findings.append({"key": key, "op": op, "threshold": thr, "value": val, "ok": ok, "message": r.get('message')})
+    return findings
+```
+
+Update `activities_compliance.py` to merge multiple rulesets and to pull a real `spec` from docs/data when available.
+
+---
+
+## 5) Telemetry — Baselines & Anomalies
+
+Replace `services/telemetry/ingestor.py`:
+```python
+import math, time
+from collections import defaultdict, deque
+
+# In‑memory rolling baselines (swap to TSDB later)
+_windows = defaultdict(lambda: deque(maxlen=60))  # 60 samples window per metric
+
+def update_baseline(system_id: str, metrics: dict):
+    key = lambda m: f"{system_id}:{m}"
+    for m, v in metrics.items():
+        _windows[key(m)].append(float(v))
+
+def mean_std(vals):
+    if not vals: return (0.0, 0.0)
+    mu = sum(vals)/len(vals)
+    var = sum((x-mu)**2 for x in vals)/max(1,len(vals)-1)
+    return mu, math.sqrt(var)
+
+def alert_findings(metrics: dict, headroom: float = 0.8, z_thresh: float = 2.5):
+    findings = []
+    for k, v in metrics.items():
+        vals = list(_windows[k])
+        mu, sd = mean_std(vals)
+        if mu > 0 and v < headroom*mu:
+            findings.append({"metric": k, "value": v, "expected": mu, "status": "low_vs_baseline"})
+        if sd > 0 and abs((v-mu)/sd) > z_thresh:
+            findings.append({"metric": k, "value": v, "expected": mu, "status": "zscore_anomaly"})
+    return findings
+```
+
+Update `activities_alerts.py` to call `update_baseline(system_id, metrics)` before computing findings.
+
+> **TSDB later**: add TimescaleDB service in `docker-compose`, write telemetry rows, compute baselines via SQL window functions or a small analytics job.
+
+---
+
+## 6) GitHub Actions — PR polish
+
+Create `.github/workflows/pr-polish.yml`:
+```yaml
+name: PR Polish
+on:
+  pull_request:
+    types: [opened, synchronize]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  label-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: auto-generated
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            🤖 This PR was opened by EcoMate AI. Please review CSV diffs and evidence attachments.
+```
+
+---
+
+## 7) LLM Interpret — Free-form → Structured Spec
+
+Create `services/proposal/router_interpret.py`:
+```python
+from fastapi import APIRouter
+from pydantic import BaseModel
+from temporalio.client import Client
+from services.orchestrator.model_router import ModelRouter
+
+router = APIRouter(prefix='/llm', tags=['llm'])
+
+class InterpretReq(BaseModel):
+    prompt: str
+
+@router.post('/interpret')
+async def interpret(req: InterpretReq):
+    # Returns a structured spec dict for Proposal workflow
+    router = ModelRouter({"default": {"provider": "ollama", "model": "qwen2.5:7b-instruct"}})
+    schema = """Return JSON with fields: {type, capacity_lpd, households, offgrid, assumptions:{distance_km}}"""
+    resp = await router.run("reason", f"Extract proposal spec. {schema}\nUser request: {req.prompt}")
+    return {"spec": resp}
+```
+
+Include router in API and (optionally) thread output into ProposalWorkflow.
+
+---
+
+## 8) Tests (smoke)
+
+Create `tests/test_bom.py`:
+```python
+from services.proposal.models import SystemSpec
+from services.proposal.bom_engine import base_bom_for
+
+def test_bom_scaling():
+    spec = SystemSpec(type='wastewater', capacity_lpd=30000)
+    bom = base_bom_for(spec)
+    assert bom and sum(i.qty for i in bom) > 0
+```
+
+Create `tests/test_catalog.py` with small fixtures to validate normalizers.
+
+---
+
+## 9) Rollout Checklist
+- [ ] Install new deps; run `pytest`.
+- [ ] Add real SKU mappings and prices in `data/suppliers.csv`.
+- [ ] Incrementally replace selector rules with domain logic.
+- [ ] Tune maintenance rules per site conditions; record last_service per system.
+- [ ] Expand compliance rulesets; integrate compliance pre-check inside Proposal workflow before PR.
+- [ ] Enable PR Polish workflow and branding for PDFs.
+- [ ] Plan TSDB adoption; migrate telemetry baselines from in-memory to DB.
+
+**End of Pack — paste, register, and iterate.**

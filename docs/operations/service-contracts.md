@@ -1,6 +1,10 @@
 # Service Contracts
 
-> Operations playbook for service agreements, maintenance schedules, and client relationship management.
+> **Version**: 1.0  
+> **Last Updated**: January 2024  
+> **Maintainer**: Operations Team
+
+Operations playbook for service agreements, maintenance schedules, and client relationship management.
 
 ## Contract Types
 - Standard maintenance agreements

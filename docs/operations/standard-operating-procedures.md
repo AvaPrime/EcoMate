@@ -1,5 +1,9 @@
 # Standard Operating Procedures
 
+> **Version**: 1.0  
+> **Last Updated**: January 2024  
+> **Maintainer**: Operations Team
+
 ## Overview
 
 These Standard Operating Procedures (SOPs) ensure safe, efficient, and compliant operation of EcoMate wastewater treatment systems. All operators must be trained and certified on these procedures before independent operation.

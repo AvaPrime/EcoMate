@@ -2,14 +2,16 @@
 
 Agent services for EcoMate: research, supplier sync, price monitor, spec drafting, and compliance checks.
 
-## Table of Contents
+## 📋 Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Installation Guide](#installation-guide)
-3. [Usage Instructions](#usage-instructions)
-4. [API Documentation](#api-documentation)
-5. [Maintenance Guide](#maintenance-guide)
-6. [Contribution Guidelines](#contribution-guidelines)
+- [Project Overview](#project-overview)
+- [Installation Guide](#installation-guide)
+- [Usage Instructions](#usage-instructions)
+- [API Documentation](#api-documentation)
+- [Maintenance Guide](#maintenance-guide)
+- [Contribution Guidelines](#contribution-guidelines)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
 
 ## Project Overview
 
@@ -17,19 +19,26 @@ Agent services for EcoMate: research, supplier sync, price monitor, spec draftin
 
 EcoMate AI is an intelligent automation platform designed to streamline environmental technology research, supplier management, and compliance monitoring. The system provides:
 
-- **Automated Research**: Web crawling and data extraction for environmental technology suppliers and products
-- **Price Monitoring**: Continuous tracking of product prices with deviation alerts and automated reporting
+- **Automated Research**: Web crawling and data extraction for environmental technology suppliers and products with intelligent content parsing
+- **Price Monitoring**: Continuous tracking of product prices with deviation alerts, automated reporting, and GitHub integration
 - **Vendor-Specific Parsing**: Specialized parsers for pump and UV reactor specifications with intelligent fallback to LLM processing
 - **Compliance Management**: Automated spec drafting and compliance checks for environmental systems
-- **Documentation Automation**: Automated PR creation and documentation updates
+- **Documentation Automation**: Automated PR creation and documentation updates with version control integration
+- **Workflow Orchestration**: Reliable, fault-tolerant execution of complex business processes using Temporal
 
 ### Key Features and Functionality
 
+#### 🔍 **Intelligent Research Capabilities**
+- **Advanced Web Crawling**: Automated crawling with respect for robots.txt and intelligent rate limiting
+- **Content Extraction**: BeautifulSoup and Selectolax-based parsing with custom selectors
+- **Data Classification**: Intelligent categorization of products and specifications
+- **Multi-source Aggregation**: Deduplication and normalization across multiple suppliers
+
 #### Core Services
 - **Research Workflows**: Automated crawling, parsing, and data extraction from supplier websites
-- **Price Monitoring**: Scheduled price tracking with configurable deviation thresholds
+- **Price Monitoring**: Scheduled price tracking with configurable deviation thresholds and alert systems
 - **Vendor Parsers**: Domain-specific parsers for pumps and UV reactors with structured data extraction
-- **LLM Integration**: Fallback processing using Ollama and Google Vertex AI models
+- **LLM Integration**: Fallback processing using Ollama and Google Vertex AI models with context-aware prompts
 - **Document Management**: MinIO-based artifact storage and GitHub integration for documentation
 
 #### Advanced Capabilities
@@ -43,9 +52,10 @@ EcoMate AI is an intelligent automation platform designed to streamline environm
 
 #### System Requirements
 - **Operating System**: Linux, macOS, or Windows with Docker support
-- **Memory**: Minimum 8GB RAM (16GB recommended for AI models)
-- **Storage**: 20GB available disk space
-- **Network**: Internet connectivity for AI services and web crawling
+- **Memory**: Minimum 8GB RAM (16GB recommended for AI models and concurrent workflows)
+- **Storage**: 20GB available disk space (SSD recommended for optimal database performance)
+- **Network**: Stable internet connectivity for AI services and web crawling
+- **CPU**: 4+ cores recommended (8+ for production workloads)
 
 #### Core Dependencies
 - **Python**: 3.11+ with virtual environment support
@@ -79,10 +89,10 @@ pdfplumber==0.11.4        # PDF text extraction
 ### System Requirements
 
 #### Hardware Requirements
-- **CPU**: 4+ cores recommended
-- **RAM**: 8GB minimum, 16GB recommended
-- **Storage**: 20GB available space
-- **Network**: Stable internet connection
+- **CPU**: 4+ cores recommended (8+ for production workloads)
+- **RAM**: 8GB minimum, 16GB recommended (32GB for heavy AI processing)
+- **Storage**: 20GB available space (SSD strongly recommended)
+- **Network**: Stable internet connection with sufficient bandwidth for web crawling
 
 #### Software Prerequisites
 - **Docker**: Version 20.10+ with Docker Compose
@@ -92,6 +102,14 @@ pdfplumber==0.11.4        # PDF text extraction
 
 ### Step-by-Step Setup Instructions
 
+#### Prerequisites Checklist
+Before starting, ensure you have:
+- [ ] Python 3.11+ installed (`python --version`)
+- [ ] Docker Desktop or Docker Engine with Compose
+- [ ] Git configured with your credentials
+- [ ] Sufficient system resources available
+- [ ] Internet connection for dependencies
+
 #### 1. Repository Setup
 ```bash
 # Clone the repository
@@ -100,6 +118,9 @@ cd ecomate-ai
 
 # Create and configure environment
 cp .env.example .env
+
+# Make scripts executable (Linux/macOS)
+chmod +x scripts/*.sh
 ```
 
 #### 2. Environment Configuration
@@ -432,6 +453,59 @@ curl -X POST 'http://localhost:8080/run/research' \
   - Permissions: AI Platform User, Vertex AI User
   - Configuration: Set `GOOGLE_APPLICATION_CREDENTIALS`
 
+## Troubleshooting
+
+### Quick Diagnostics
+
+#### System Health Check
+```bash
+# Check all services status
+docker compose ps
+
+# Verify API health
+curl http://localhost:8080/health
+
+# Check Temporal UI
+open http://localhost:8088
+
+# Test database connection
+psql -h localhost -U postgres -d ecomate -c "SELECT version();"
+```
+
+#### Common Issues & Solutions
+
+**🔴 Service Won't Start**
+```bash
+# Check logs for specific service
+docker compose logs [service-name]
+
+# Restart specific service
+docker compose restart [service-name]
+
+# Full system restart
+docker compose down && docker compose up -d
+```
+
+**🔴 Port Conflicts**
+```bash
+# Check what's using the port
+lsof -i :8080  # or netstat -tulpn | grep 8080
+
+# Kill process using port
+sudo kill -9 [PID]
+```
+
+**🔴 Database Connection Issues**
+```bash
+# Reset database
+docker compose down postgres
+docker volume rm ecomate-ai_postgres_data
+docker compose up -d postgres
+
+# Wait for initialization
+sleep 30
+```
+
 ## Maintenance Guide
 
 ### Troubleshooting Procedures
@@ -566,6 +640,50 @@ tail -f logs/ecomate-ai.log
 # Docker service logs
 docker compose logs -f temporal
 docker compose logs -f postgres
+```
+
+## Development
+
+### Development Environment Setup
+
+#### Local Development
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Install pre-commit hooks
+pre-commit install
+
+# Run tests
+pytest tests/ -v
+
+# Start development server with hot reload
+uvicorn services.api.main:app --reload --port 8080
+```
+
+#### Testing
+```bash
+# Run all tests with coverage
+pytest --cov=services tests/
+
+# Run specific test categories
+pytest tests/unit/  # Unit tests only
+pytest tests/integration/  # Integration tests only
+
+# Run tests with verbose output
+pytest -v -s tests/
+```
+
+#### Debugging
+```bash
+# Enable debug logging
+export LOG_LEVEL=DEBUG
+
+# Run with debugger
+python -m pdb services/api/main.py
+
+# Profile performance
+python -m cProfile -o profile.stats services/parsers/_demo_test.py
 ```
 
 ## Contribution Guidelines
