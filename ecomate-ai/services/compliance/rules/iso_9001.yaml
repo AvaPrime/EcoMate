@@ -1,0 +1,140 @@
+# ISO 9001:2015 - Quality Management Systems
+# Requirements for quality management systems
+
+ruleset:
+  id: "iso_9001"
+  name: "ISO 9001:2015 Quality Management Systems"
+  version: "2015.1"
+  description: "International standard for quality management systems requirements"
+  standard_type: "ISO"
+  jurisdiction: "International"
+  effective_date: "2015-09-15"
+  
+rules:
+  - rule_id: "ISO9001_4_001"
+    name: "Quality Management System Documentation"
+    description: "Organization must maintain documented quality management system"
+    severity: "CRITICAL"
+    logical_operator: "AND"
+    conditions:
+      - field: "qms_documented"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "quality_manual_current"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "procedures_documented"
+        operator: "EQUALS"
+        expected_value: true
+    
+  - rule_id: "ISO9001_5_001"
+    name: "Leadership and Quality Policy"
+    description: "Top management must demonstrate leadership and commitment"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "quality_policy_established"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "quality_objectives_defined"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "management_review_frequency_months"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 12
+    
+  - rule_id: "ISO9001_6_001"
+    name: "Risk and Opportunity Management"
+    description: "Organization must address risks and opportunities"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "risk_assessment_conducted"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "risk_register_maintained"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "risk_review_frequency_months"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 6
+    
+  - rule_id: "ISO9001_7_001"
+    name: "Resource Management"
+    description: "Adequate resources must be provided for QMS implementation"
+    severity: "MEDIUM"
+    logical_operator: "AND"
+    conditions:
+      - field: "competency_requirements_defined"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "training_records_maintained"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "infrastructure_adequate"
+        operator: "EQUALS"
+        expected_value: true
+    
+  - rule_id: "ISO9001_8_001"
+    name: "Operational Planning and Control"
+    description: "Processes must be planned, implemented and controlled"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "process_controls_implemented"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "product_requirements_defined"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "customer_communication_process"
+        operator: "EQUALS"
+        expected_value: true
+    
+  - rule_id: "ISO9001_8_002"
+    name: "Product and Service Requirements"
+    description: "Requirements for products and services must be determined"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "customer_requirements_reviewed"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "design_controls_implemented"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "supplier_evaluation_conducted"
+        operator: "EQUALS"
+        expected_value: true
+    
+  - rule_id: "ISO9001_9_001"
+    name: "Performance Evaluation"
+    description: "Organization must monitor, measure, analyze and evaluate performance"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "customer_satisfaction_monitored"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "internal_audits_conducted"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "audit_frequency_months"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 12
+    
+  - rule_id: "ISO9001_10_001"
+    name: "Continuous Improvement"
+    description: "Organization must continually improve QMS effectiveness"
+    severity: "MEDIUM"
+    logical_operator: "AND"
+    conditions:
+      - field: "nonconformity_process_established"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "corrective_actions_implemented"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "improvement_opportunities_identified"
+        operator: "EQUALS"
+        expected_value: true

@@ -1,0 +1,62 @@
+# Enhanced Telemetry Service Dependencies
+
+# Core FastAPI and async support
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# Database connectivity
+asyncpg>=0.29.0
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Time series and data processing
+numpy>=1.24.0
+pandas>=2.1.0
+scipy>=1.11.0
+
+# Temporal workflow (existing dependency)
+temporalio>=1.4.0
+
+# Logging and monitoring
+structlog>=23.2.0
+prometheus-client>=0.19.0
+
+# Configuration and environment
+python-dotenv>=1.0.0
+pydantic-settings>=2.1.0
+
+# HTTP client for external APIs
+httpx>=0.25.0
+aiohttp>=3.9.0
+
+# Data validation and serialization
+marshmallow>=3.20.0
+
+# Testing dependencies (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.12.0
+factory-boy>=3.3.0
+
+# Development dependencies (optional)
+black>=23.11.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.7.0
+
+# Optional TimescaleDB support
+# Uncomment if using TimescaleDB-specific features
+# timescaledb>=0.1.0
+
+# Optional InfluxDB support
+# Uncomment if using InfluxDB as alternative time-series database
+# influxdb-client>=1.38.0
+
+# Security and authentication
+cryptography>=41.0.0
+passlib[bcrypt]>=1.7.4
+
+# Utilities
+python-dateutil>=2.8.2
+pytz>=2023.3

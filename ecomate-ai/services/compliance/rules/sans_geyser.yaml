@@ -1,0 +1,88 @@
+ruleset_id: sans_geyser
+name: SANS 151 Solar Water Heater Standards
+description: South African National Standard for solar water heating systems
+standard_type: SANS
+version: "2.0"
+jurisdiction: "South Africa"
+effective_date: "2024-01-01"
+rules:
+  - rule_id: SANS_151_COLLECTOR_EFFICIENCY
+    name: Solar Collector Efficiency
+    description: Minimum efficiency requirements for solar collectors
+    standard_type: SANS
+    system_types:
+      - SOLAR_HEATING
+      - WATER_TREATMENT
+    severity: HIGH
+    conditions:
+      - field: collector_efficiency
+        operator: GREATER_EQUAL
+        value: 0.65
+        description: "Collector efficiency must be >= 65%"
+    remediation_guidance: "Upgrade to higher efficiency solar collectors or optimize collector positioning"
+    
+  - rule_id: SANS_151_STORAGE_CAPACITY
+    name: Storage Tank Capacity
+    description: Minimum storage capacity per household member
+    standard_type: SANS
+    system_types:
+      - SOLAR_HEATING
+    severity: MEDIUM
+    conditions:
+      - field: storage_capacity_per_person
+        operator: GREATER_EQUAL
+        value: 50
+        description: "Storage capacity must be >= 50L per person"
+    remediation_guidance: "Increase storage tank capacity or install additional tanks"
+    
+  - rule_id: SANS_151_INSULATION_RATING
+    name: Tank Insulation Rating
+    description: Thermal insulation requirements for storage tanks
+    standard_type: SANS
+    system_types:
+      - SOLAR_HEATING
+    severity: HIGH
+    conditions:
+      - field: insulation_r_value
+        operator: GREATER_EQUAL
+        value: 2.5
+        description: "Insulation R-value must be >= 2.5 m²K/W"
+    remediation_guidance: "Upgrade tank insulation to meet thermal performance standards"
+    
+  - rule_id: SANS_151_BACKUP_HEATING
+    name: Backup Heating System
+    description: Requirements for backup heating elements
+    standard_type: SANS
+    system_types:
+      - SOLAR_HEATING
+    severity: MEDIUM
+    conditions:
+      - field: backup_heating_capacity
+        operator: GREATER_EQUAL
+        value: 3000
+        description: "Backup heating capacity must be >= 3kW"
+      - field: backup_heating_efficiency
+        operator: GREATER_EQUAL
+        value: 0.85
+        description: "Backup heating efficiency must be >= 85%"
+    logic_operator: AND
+    remediation_guidance: "Install or upgrade backup heating system to meet capacity and efficiency requirements"
+    
+  - rule_id: SANS_151_FREEZE_PROTECTION
+    name: Freeze Protection System
+    description: Protection against freezing in cold climates
+    standard_type: SANS
+    system_types:
+      - SOLAR_HEATING
+    severity: HIGH
+    conditions:
+      - field: freeze_protection_enabled
+        operator: EQUALS
+        value: true
+        description: "Freeze protection must be enabled"
+      - field: minimum_operating_temp
+        operator: LESS_EQUAL
+        value: -5
+        description: "System must operate down to -5°C"
+    logic_operator: AND
+    remediation_guidance: "Install freeze protection valves and glycol circulation system"

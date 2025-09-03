@@ -1,0 +1,173 @@
+🌍 EcoMate v0.1.0 Readiness & Release Review
+
+1. Public-Facing Services
+   Documentation (MkDocs + GitHub Pages)
+
+Current: Docs auto-build/deploy on push to main. Pages URL live at avaprime.github.io/EcoMate
+. Custom domain (docs.ecomate.co.za) not yet wired (missing CNAME + DNS).
+
+Actions:
+
+Add CNAME file in /docs branch and update DNS.
+
+Fix README and mkdocs.yml links (remove placeholder your-org).
+
+Update repo_url in mkdocs.yml to AvaPrime/EcoMate for correct “Edit on GitHub” links.
+
+Run link checker across docs, scrub placeholder/TBD text.
+
+Test PDF export for formatting issues.
+
+AI Services API (FastAPI)
+
+Current: Running on port 8080; endpoints /docs interactive. Temporal & MinIO integrated. Tests + CI in place.
+
+Actions:
+
+Add /health route (matches Dockerfile healthcheck).
+
+Validate .env.example defaults, fail gracefully if external API keys missing.
+
+Harden prod: run behind Uvicorn/Gunicorn with multiple workers, HTTPS, debug off.
+
+Add basic rate-limiting & input validation.
+
+Temporal (Workflows)
+
+Current: Temporal server in compose, worker on ecomate-ai queue, Web UI on 8088.
+
+Actions:
+
+Run test workflows and check Web UI.
+
+Secure Web UI access (VPN/proxy).
+
+Tune timeouts/retries/retention.
+
+Plan Postgres + Temporal HA/backups for prod.
+
+MinIO (Object Storage)
+
+Current: Running on 9000/9001 with default creds. Bucket ecomate-artifacts referenced.
+
+Actions:
+
+Change credentials for prod.
+
+Auto-create bucket on startup.
+
+Restrict console access (VPN/localhost).
+
+Evaluate managed S3 for production.
+
+2. Documentation & Publishing
+
+Final proofread for placeholders.
+
+README: fix “Live Documentation” link.
+
+Test GitHub Actions release workflow (workflow_dispatch) for PDF builds.
+
+Consider single PDF export/manual for enterprise users.
+
+3. Licensing
+
+Current: README says MIT, LICENSE.md says proprietary.
+
+Actions:
+
+Align README, docs, CONTRIBUTING → proprietary.
+
+Rename LICENSE.md → LICENSE (GitHub recognizes).
+
+Audit dependencies (ensure permissive licenses).
+
+Add THIRD_PARTY.md with attributions.
+
+4. GitHub Repo Metadata
+
+Add description + links (docs, website).
+
+Add tags: fastapi, temporal, workflow-automation, sustainability, mkdocs.
+
+Upload social preview banner.
+
+Enable branch protection on main.
+
+Add CODE_OF_CONDUCT.md (Contributor Covenant).
+
+Complete GitHub community checklist.
+
+5. CI/CD & Release Workflow
+
+CI: Ensure tests, linting, typing, security scans run on all PRs. Add CodeQL.
+
+CD: Verify container image name/tags (ghcr.io/AvaPrime/EcoMate/api:0.1.0).
+
+Release: Dry-run workflow to check changelog, artifact upload.
+
+Deployment checklist:
+
+Secure DB creds.
+
+MinIO bucket + creds.
+
+Temporal persistence/backups.
+
+Optionally add docker-compose.prod.yml with hardened defaults.
+
+Document required env vars in README or docs.
+
+6. Security & Community
+
+SECURITY.md: update versions table → 0.1.0.
+
+Add CODE_OF_CONDUCT.md.
+
+CONTRIBUTING.md: clarify contribution licensing (proprietary).
+
+Governance: add statement about EcoMate team maintaining direction.
+
+Run dependency + vulnerability scan (Safety, Dependabot, CodeQL).
+
+Consider adding LEGAL/THIRD_PARTY.md.
+
+7. Observability & Ops
+
+Logging: Structured JSON logs for API & worker.
+
+Metrics: Prometheus scrapers for FastAPI, Temporal, MinIO. Ship Grafana dashboards.
+
+Tracing: Add OpenTelemetry hooks (optional for v0.1.0).
+
+Alerts: API heartbeat, workflow failures, MinIO storage thresholds.
+
+Backups: Postgres dumps/restore tests, MinIO replication/backups.
+
+Hardening: Non-root containers (already set), image scans, TLS on public endpoints.
+
+✅ Release Checklist (Final Mile)
+
+Docs live at correct URL, links fixed.
+
+/health endpoint implemented.
+
+License aligned + LICENSE file renamed.
+
+Repo metadata polished (desc, tags, preview).
+
+Branch protection enabled.
+
+CI passing on all PRs; CodeQL enabled.
+
+Release workflow dry-run successful.
+
+SECURITY.md + CODE_OF_CONDUCT.md updated.
+
+Monitoring: Prometheus/Grafana basic dashboard ready.
+
+Backup procedure tested for Postgres.
+
+Version v0.1.0 tagged, release notes published, artifacts uploaded.
+
+EcoMate is at the “nearly production-ready” stage: strong docs, modular architecture, robust CI/CD. By tightening licensing, metadata polish, observability, and security hardening, the v0.1.0 release can land as a professional, enterprise-grade launchpad.

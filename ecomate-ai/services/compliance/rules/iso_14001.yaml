@@ -1,0 +1,114 @@
+ruleset_id: iso_14001
+name: ISO 14001 Environmental Management Systems
+description: International standard for environmental management systems
+standard_type: ISO
+version: "2015"
+jurisdiction: "International"
+effective_date: "2015-09-15"
+rules:
+  - rule_id: ISO_14001_WATER_CONSUMPTION
+    name: Water Consumption Monitoring
+    description: Water usage must be monitored and controlled
+    standard_type: ISO
+    system_types:
+      - WATER_TREATMENT
+      - SOLAR_HEATING
+      - WASTE_MANAGEMENT
+    severity: HIGH
+    conditions:
+      - field: water_monitoring_enabled
+        operator: EQUALS
+        value: true
+        description: "Water consumption monitoring must be enabled"
+      - field: water_usage_target_met
+        operator: EQUALS
+        value: true
+        description: "Water usage targets must be met"
+    logic_operator: AND
+    remediation_guidance: "Implement water monitoring systems and establish consumption targets"
+    
+  - rule_id: ISO_14001_ENERGY_EFFICIENCY
+    name: Energy Efficiency Requirements
+    description: Energy consumption must be optimized and monitored
+    standard_type: ISO
+    system_types:
+      - SOLAR_HEATING
+      - WATER_TREATMENT
+    severity: MEDIUM
+    conditions:
+      - field: energy_efficiency_rating
+        operator: GREATER_EQUAL
+        value: 0.8
+        description: "Energy efficiency must be >= 80%"
+      - field: renewable_energy_percentage
+        operator: GREATER_EQUAL
+        value: 30
+        description: "Renewable energy usage must be >= 30%"
+    logic_operator: AND
+    remediation_guidance: "Upgrade to more efficient equipment and increase renewable energy usage"
+    
+  - rule_id: ISO_14001_WASTE_REDUCTION
+    name: Waste Minimization
+    description: Waste generation must be minimized and properly managed
+    standard_type: ISO
+    system_types:
+      - WASTE_MANAGEMENT
+      - WATER_TREATMENT
+    severity: HIGH
+    conditions:
+      - field: waste_reduction_target_met
+        operator: EQUALS
+        value: true
+        description: "Waste reduction targets must be achieved"
+      - field: recycling_rate
+        operator: GREATER_EQUAL
+        value: 75
+        description: "Recycling rate must be >= 75%"
+    logic_operator: AND
+    remediation_guidance: "Implement waste reduction programs and improve recycling processes"
+    
+  - rule_id: ISO_14001_ENVIRONMENTAL_OBJECTIVES
+    name: Environmental Objectives
+    description: Environmental objectives must be established and monitored
+    standard_type: ISO
+    system_types:
+      - WATER_TREATMENT
+      - SOLAR_HEATING
+      - WASTE_MANAGEMENT
+    severity: CRITICAL
+    conditions:
+      - field: environmental_objectives_defined
+        operator: EQUALS
+        value: true
+        description: "Environmental objectives must be defined"
+      - field: objectives_progress_tracked
+        operator: EQUALS
+        value: true
+        description: "Progress towards objectives must be tracked"
+      - field: management_review_completed
+        operator: EQUALS
+        value: true
+        description: "Management review must be completed"
+    logic_operator: AND
+    remediation_guidance: "Establish clear environmental objectives, implement tracking systems, and conduct regular management reviews"
+    
+  - rule_id: ISO_14001_LEGAL_COMPLIANCE
+    name: Legal and Regulatory Compliance
+    description: All applicable legal requirements must be identified and met
+    standard_type: ISO
+    system_types:
+      - WATER_TREATMENT
+      - SOLAR_HEATING
+      - WASTE_MANAGEMENT
+    severity: CRITICAL
+    conditions:
+      - field: legal_requirements_identified
+        operator: EQUALS
+        value: true
+        description: "Legal requirements must be identified"
+      - field: compliance_status_verified
+        operator: EQUALS
+        value: true
+        description: "Compliance status must be verified"
+    logic_operator: AND
+    remediation_guidance: "Conduct legal compliance audit and implement corrective actions for any non-conformities"

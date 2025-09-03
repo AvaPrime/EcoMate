@@ -1,0 +1,102 @@
+# SANS 10400 - The Application of the National Building Regulations
+# Part XA: Energy Usage in Buildings
+
+ruleset:
+  id: "sans_10400"
+  name: "SANS 10400 Building Regulations - Energy Usage"
+  version: "2024.1"
+  description: "South African National Standard for energy usage in buildings"
+  standard_type: "SANS"
+  jurisdiction: "South Africa"
+  effective_date: "2024-01-01"
+  
+rules:
+  - rule_id: "SANS10400_XA_001"
+    name: "Building Energy Performance Certificate"
+    description: "Buildings must have valid energy performance certificates"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "energy_certificate_valid"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "certificate_expiry_date"
+        operator: "GREATER_THAN"
+        expected_value: "2024-01-01"
+    
+  - rule_id: "SANS10400_XA_002"
+    name: "Thermal Insulation Requirements"
+    description: "Building envelope must meet minimum thermal resistance values"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "roof_thermal_resistance"
+        operator: "GREATER_THAN_OR_EQUAL"
+        expected_value: 3.7
+      - field: "wall_thermal_resistance"
+        operator: "GREATER_THAN_OR_EQUAL"
+        expected_value: 1.9
+      - field: "floor_thermal_resistance"
+        operator: "GREATER_THAN_OR_EQUAL"
+        expected_value: 1.3
+    
+  - rule_id: "SANS10400_XA_003"
+    name: "Window Energy Rating"
+    description: "Windows must meet minimum energy performance ratings"
+    severity: "MEDIUM"
+    logical_operator: "AND"
+    conditions:
+      - field: "window_energy_rating"
+        operator: "GREATER_THAN_OR_EQUAL"
+        expected_value: 3
+      - field: "glazing_u_value"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 5.7
+    
+  - rule_id: "SANS10400_XA_004"
+    name: "HVAC System Efficiency"
+    description: "Heating, ventilation and air conditioning systems efficiency requirements"
+    severity: "HIGH"
+    logical_operator: "AND"
+    conditions:
+      - field: "hvac_cop_heating"
+        operator: "GREATER_THAN_OR_EQUAL"
+        expected_value: 3.2
+      - field: "hvac_cop_cooling"
+        operator: "GREATER_THAN_OR_EQUAL"
+        expected_value: 2.8
+      - field: "hvac_maintenance_current"
+        operator: "EQUALS"
+        expected_value: true
+    
+  - rule_id: "SANS10400_XA_005"
+    name: "Lighting Power Density"
+    description: "Maximum lighting power density limits for different building types"
+    severity: "MEDIUM"
+    logical_operator: "OR"
+    conditions:
+      - field: "lighting_power_density_office"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 11.0
+      - field: "lighting_power_density_residential"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 7.0
+      - field: "lighting_power_density_retail"
+        operator: "LESS_THAN_OR_EQUAL"
+        expected_value: 15.0
+    
+  - rule_id: "SANS10400_XA_006"
+    name: "Solar Water Heating Requirements"
+    description: "Mandatory solar water heating for certain building types"
+    severity: "HIGH"
+    logical_operator: "OR"
+    conditions:
+      - field: "solar_water_heating_installed"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "alternative_renewable_energy"
+        operator: "EQUALS"
+        expected_value: true
+      - field: "building_exemption_certificate"
+        operator: "EQUALS"
+        expected_value: true
