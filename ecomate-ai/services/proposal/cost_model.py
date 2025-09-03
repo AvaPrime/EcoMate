@@ -7,6 +7,10 @@ from ..vendors.client import VendorClient
 LABOUR_RATE = float(os.getenv('LABOUR_RATE_ZAR', '450'))
 LOGI_RATE = float(os.getenv('LOGISTICS_RATE_ZAR_PER_KM', '18'))
 MARGIN = float(os.getenv('DEFAULT_MARGIN', '0.18'))
+LABOUR_PERCENTAGE = 12.0
+LOGISTICS_RATE_PER_KM = LOGI_RATE
+OPEX_PERCENTAGE = 3.0
+MARGIN_PERCENTAGE = MARGIN * 100
 
 def compute_quote(bom: list[BOMItem], distance_km: float) -> Quote:
     materials = sum(i.qty * i.unit_price for i in bom)

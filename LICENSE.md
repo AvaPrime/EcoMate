@@ -1,10 +1,10 @@
-# EcoMate Platform - Proprietary License
+# EcoMate AI - Proprietary License
 
-**Copyright © 2025 EcoMate Platform. All Rights Reserved.**
+**Copyright © 2025 AvaPrime Technologies. All Rights Reserved.**
 
 ## License Terms
 
-This software and associated documentation files (the "Software") are proprietary and confidential to EcoMate Platform ("Company"). The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
+This software and associated documentation files (the "Software") are proprietary and confidential to AvaPrime Technologies ("Company"). The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
 
 ## Permitted Use
 
@@ -44,9 +44,9 @@ IN NO EVENT SHALL THE COMPANY BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, O
 
 For licensing inquiries, commercial use permissions, or other questions regarding this license, please contact:
 
-**EcoMate Platform**  
-Email: licensing@ecomate.platform  
-Website: https://ecomate.platform
+**AvaPrime Technologies**  
+Email: licensing@ecomate.co.za  
+Website: https://ecomate.co.za
 
 ---
 

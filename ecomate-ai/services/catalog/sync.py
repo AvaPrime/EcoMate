@@ -88,7 +88,7 @@ class CatalogNormalizer:
                         updated_at = datetime.fromisoformat(product['updated_at'].replace('Z', '+00:00'))
                     if product.get('published_at'):
                         published_at = datetime.fromisoformat(product['published_at'].replace('Z', '+00:00'))
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logger.warning(f"Failed to parse timestamps for product {product_id}: {e}")
                 
                 normalized_product = NormalizedProduct(
@@ -117,7 +117,7 @@ class CatalogNormalizer:
                 
                 normalized.append(normalized_product)
                 
-            except Exception as e:
+            except (KeyError, TypeError, ValueError) as e:
                 error_msg = f"Failed to normalize Shopify product {product.get('id', 'unknown')}: {str(e)}"
                 logger.error(error_msg)
                 errors.append(error_msg)
@@ -159,7 +159,7 @@ class CatalogNormalizer:
                 if product.get('price'):
                     try:
                         price = Decimal(str(product['price']))
-                    except:
+                    except ValueError:
                         pass
                 
                 # Handle images
@@ -209,7 +209,7 @@ class CatalogNormalizer:
                         created_at = datetime.fromisoformat(product['date_created'].replace('Z', '+00:00'))
                     if product.get('date_modified'):
                         updated_at = datetime.fromisoformat(product['date_modified'].replace('Z', '+00:00'))
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logger.warning(f"Failed to parse timestamps for WooCommerce product {product_id}: {e}")
                 
                 normalized_product = NormalizedProduct(
@@ -249,7 +249,7 @@ class CatalogNormalizer:
                 
                 normalized.append(normalized_product)
                 
-            except Exception as e:
+            except (KeyError, TypeError, ValueError) as e:
                 error_msg = f"Failed to normalize WooCommerce product {product.get('id', 'unknown')}: {str(e)}"
                 logger.error(error_msg)
                 errors.append(error_msg)
@@ -332,7 +332,7 @@ class CatalogNormalizer:
                         created_at = datetime.fromisoformat(product['created_at'].replace('Z', '+00:00'))
                     if product.get('updated_at'):
                         updated_at = datetime.fromisoformat(product['updated_at'].replace('Z', '+00:00'))
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logger.warning(f"Failed to parse timestamps for Medusa product {product_id}: {e}")
                 
                 normalized_product = NormalizedProduct(
@@ -359,7 +359,7 @@ class CatalogNormalizer:
                 
                 normalized.append(normalized_product)
                 
-            except Exception as e:
+            except (KeyError, TypeError, ValueError) as e:
                 error_msg = f"Failed to normalize Medusa product {product.get('id', 'unknown')}: {str(e)}"
                 logger.error(error_msg)
                 errors.append(error_msg)

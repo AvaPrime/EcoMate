@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import ValidationError
 import structlog
 
 from .client import GeospatialAPIError

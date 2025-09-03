@@ -1896,4 +1896,7 @@ test(parsers): add comprehensive pump parser tests
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is proprietary software owned by AvaPrime Technologies. All rights reserved.
+See the LICENSE file for complete terms and conditions.
+
+For licensing inquiries, please contact: licensing@ecomate.co.za

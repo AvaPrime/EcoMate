@@ -33,6 +33,10 @@ By participating in this project, you agree to abide by our Code of Conduct:
 
 Before contributing to EcoMate, ensure you have:
 
+## License
+
+This project is proprietary software owned by AvaPrime Technologies. By contributing to this project, you agree that your contributions will be licensed under the same proprietary license. For licensing inquiries, please contact: licensing@avaprime.co.za
+
 - **Python 3.11+**: Required for all services (3.11.0 or higher recommended)
 - **Docker & Docker Compose**: For containerized development (Docker 20.10+, Compose 2.0+)
 - **Git**: Version control and collaboration (2.30+)
