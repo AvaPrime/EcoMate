@@ -155,7 +155,7 @@ async def demonstrate_comprehensive_site_assessment():
             depot_location=depot_location
         )
         
-        print(f"\nAssessment Results:")
+        print("\nAssessment Results:")
         print(f"  Project Viable: {assessment.project_viable}")
         print(f"  Confidence Score: {assessment.confidence_score:.2f}")
         
@@ -173,7 +173,7 @@ async def demonstrate_comprehensive_site_assessment():
         
         if assessment.logistics_cost:
             cost = assessment.logistics_cost
-            print(f"\nLogistics Analysis:")
+            print("\nLogistics Analysis:")
             print(f"  Distance: {cost.distance_km:.1f} km")
             print(f"  Travel Time: {cost.travel_time_hours:.1f} hours")
             print(f"  Total Cost: ${cost.total_cost_usd:.2f}")
@@ -225,7 +225,7 @@ async def demonstrate_batch_processing():
     try:
         batch_response = await service.process_batch_request(batch_request)
         
-        print(f"\nBatch Results:")
+        print("\nBatch Results:")
         print(f"  Total Queries: {batch_response.total_queries}")
         print(f"  Successful: {batch_response.successful_queries}")
         print(f"  Failed: {batch_response.failed_queries_count}")

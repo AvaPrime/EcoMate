@@ -15,10 +15,8 @@ Requirements:
 """
 
 import asyncio
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import List
 
 from services.regulatory import (
     RegulatoryService,

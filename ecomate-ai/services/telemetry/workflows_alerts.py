@@ -1,13 +1,11 @@
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-import asyncio
 from temporalio import workflow
 from .activities_alerts import (
     activity_alerts, activity_telemetry_ingestion, activity_dynamic_alerts,
     activity_baseline_management, activity_telemetry_query, activity_alert_management,
     activity_baseline_config
 )
-from .models import TelemetryIn, TelemetryQuery, BaselineConfig
 import logging
 
 logger = logging.getLogger(__name__)

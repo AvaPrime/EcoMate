@@ -88,7 +88,6 @@ class PriceMonitorWorkflow:
             alerts = []
             if report_path:
                 import csv
-                import os
                 try:
                     with open(report_path, 'r', newline='', encoding='utf-8') as csvfile:
                         reader = csv.DictReader(csvfile)

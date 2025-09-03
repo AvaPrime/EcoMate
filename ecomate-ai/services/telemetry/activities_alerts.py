@@ -1,11 +1,10 @@
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-import asyncio
 from .ingestor import (
-    alert_findings, process_telemetry_ingestion, evaluate_alerts_dynamic,
+    process_telemetry_ingestion, evaluate_alerts_dynamic,
     alert_findings_legacy, update_dynamic_baselines
 )
-from .models import TelemetryIn, Alert, TelemetryQuery, BaselineConfig
+from .models import TelemetryIn, TelemetryQuery, BaselineConfig
 from .store import get_telemetry_store
 import logging
 

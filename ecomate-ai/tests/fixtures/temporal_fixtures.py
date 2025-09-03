@@ -2,11 +2,9 @@
 
 import pytest
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List, Optional
 from unittest.mock import Mock, AsyncMock
 from decimal import Decimal
 
-from temporalio import workflow, activity
 from temporalio.client import Client, WorkflowHandle
 from temporalio.worker import Worker
 from temporalio.testing import WorkflowEnvironment

@@ -5,20 +5,17 @@ This module provides REST API endpoints for geospatial data and analysis.
 
 from datetime import datetime
 from typing import Dict, List, Optional
-from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import JSONResponse
 import structlog
 
-from .client import GeospatialClient, GeospatialAPIError
+from .client import GeospatialAPIError
 from .models import (
     BatchGeospatialRequest,
     BatchGeospatialResponse,
     GeospatialQuery,
     GeospatialResponse,
     Location,
-    SiteAssessment,
 )
 from .service import GeospatialService
 

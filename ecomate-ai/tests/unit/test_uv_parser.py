@@ -1,13 +1,11 @@
 """Unit tests for UV reactor parser components."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from bs4 import BeautifulSoup
 import json
-from pathlib import Path
 
 from src.parsers.uv_reactors import UVReactorParser
-from src.models.product import UVReactorSpecification
 from src.utils.exceptions import ParserError, ValidationError
 
 

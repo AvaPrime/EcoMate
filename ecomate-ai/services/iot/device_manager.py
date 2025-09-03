@@ -5,9 +5,7 @@ Manages IoT device lifecycle, authentication, configuration, and monitoring.
 Provides centralized device management with security and compliance features.
 """
 
-import asyncio
 import hashlib
-import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple

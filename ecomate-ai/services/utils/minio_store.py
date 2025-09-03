@@ -1,4 +1,4 @@
-import os, io, uuid
+import os, uuid
 import boto3
 from botocore.client import Config
 

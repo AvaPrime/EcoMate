@@ -7,7 +7,7 @@ for all EcoMate services as specified in the professional readiness assessment.
 import time
 import psutil
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from fastapi import APIRouter, Response, HTTPException
 from pydantic import BaseModel

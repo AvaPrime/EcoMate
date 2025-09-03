@@ -1,6 +1,5 @@
 import os
 from typing import List, Dict, Any, Optional
-import asyncio
 from .models import BOMItem, Quote, SystemSpec
 from .bom_engine import base_bom_for, base_bom_for_with_vendors, setup_vendor_client
 from ..vendors.client import VendorClient

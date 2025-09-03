@@ -6,7 +6,7 @@ basic service availability and health endpoints are functional.
 
 import pytest
 import requests
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 
 class TestAPIHealth:

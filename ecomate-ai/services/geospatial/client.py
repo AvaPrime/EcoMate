@@ -8,11 +8,10 @@ import asyncio
 import math
 import os
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import httpx
 import structlog
-from pydantic import ValidationError
 
 from .models import (
     AccessibilityLevel,
@@ -21,7 +20,6 @@ from .models import (
     ElevationData,
     GeospatialAnalysis,
     Location,
-    LogisticsCost,
     SlopeData,
     SoilData,
     SoilType,

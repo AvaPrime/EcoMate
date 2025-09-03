@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from temporalio.client import Client
 

@@ -6,8 +6,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Any
 from datetime import datetime, timedelta
 import aiohttp
-import json
-from .models import VendorComponent, VendorQuote, StockInfo, LogisticsInfo, VendorCredentials, CacheEntry
+from .models import VendorComponent, VendorQuote, StockInfo, LogisticsInfo, VendorCredentials
 from .cache import VendorCache
 
 logger = logging.getLogger(__name__)

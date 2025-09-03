@@ -2,13 +2,9 @@
 
 import pytest
 import json
-from typing import Dict, Any, List
 from unittest.mock import Mock, AsyncMock
-from datetime import datetime, timezone
 
 import httpx
-from fastapi.testclient import TestClient
-from fastapi import status
 
 
 @pytest.fixture

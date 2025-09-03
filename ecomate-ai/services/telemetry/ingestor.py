@@ -1,10 +1,9 @@
 import numpy as np
-from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timedelta
+from typing import Dict, List, Tuple
+from datetime import datetime
 import logging
 from .models import (
-    TelemetryIn, TelemetryData, DynamicBaseline, Alert, AlertRule, 
-    AlertSeverity, AlertStatus, BaselineConfig
+    TelemetryIn, TelemetryData, Alert, AlertSeverity
 )
 from .store import get_telemetry_store
 

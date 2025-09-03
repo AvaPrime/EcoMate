@@ -1,5 +1,5 @@
-import os, csv, io, json, mimetypes
-from datetime import datetime, timezone
+import os, csv, json
+from datetime import datetime
 from typing import List, Dict
 import httpx
 from services.utils.robots import allowed
@@ -8,8 +8,7 @@ from services.utils.pdf_extract import extract_tables
 from services.utils.html_tables import extract_first_table
 from services.utils.github_pr import open_pr
 from services.orchestrator.model_router import ModelRouter
-from services.parsers.dispatcher import parse_by_domain, parse_by_category
-import yaml
+from services.parsers.dispatcher import parse_by_domain
 
 SUPPLIERS = "data/suppliers.csv"
 PARTS = "data/parts_list.csv"

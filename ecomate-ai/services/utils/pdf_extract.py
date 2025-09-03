@@ -1,4 +1,4 @@
-import io, json
+import io
 import pdfplumber
 
 # Returns list[dict] with keys: table_index, rows (list[list[str]]), meta

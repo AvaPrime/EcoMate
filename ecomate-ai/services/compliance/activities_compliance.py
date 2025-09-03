@@ -6,8 +6,7 @@ from temporalio import activity
 
 from .engine import ComplianceEngine, load_rules, evaluate
 from .models import (
-    SystemSpecification, ComplianceReport, ComplianceFilter,
-    RegulatoryUpdate, ComplianceMetrics, SystemType, ComplianceStatus
+    SystemSpecification, ComplianceMetrics, SystemType, ComplianceStatus
 )
 from ..shared.github_client import GitHubClient
 

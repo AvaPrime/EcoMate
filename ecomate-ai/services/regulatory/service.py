@@ -3,10 +3,9 @@
 import asyncio
 import logging
 from datetime import datetime, date, timedelta
-from typing import Dict, List, Optional, Any, Tuple
-from collections import defaultdict
+from typing import Dict, List, Optional, Any
 
-from .client import RegulatoryClient, RegulatoryAPIError
+from .client import RegulatoryClient
 from .models import (
     StandardsBody,
     RegulatoryStandard,
@@ -15,14 +14,12 @@ from .models import (
     RegulatoryAlert,
     StandardsUpdate,
     ComplianceReport,
-    ComplianceRequirement,
     RegulatoryQuery,
     RegulatoryResponse,
     BatchRegulatoryRequest,
     BatchRegulatoryResponse,
     StandardCategory,
-    AlertSeverity,
-    UpdateType
+    AlertSeverity
 )
 
 logger = logging.getLogger(__name__)

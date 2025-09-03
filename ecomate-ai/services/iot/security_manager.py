@@ -8,7 +8,6 @@ authorization, encryption, and threat detection.
 import asyncio
 import hashlib
 import hmac
-import json
 import logging
 import secrets
 from datetime import datetime, timedelta
@@ -17,9 +16,6 @@ from uuid import uuid4
 
 import jwt
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from .models import (
     DeviceCredentials, IoTDevice, SecurityEvent, SecurityLevel,

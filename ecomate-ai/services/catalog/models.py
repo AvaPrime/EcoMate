@@ -40,7 +40,7 @@ class ProductVariant(BaseModel):
         if isinstance(v, str):
             try:
                 return Decimal(v)
-            except:
+            except ValueError:
                 return None
         return Decimal(str(v))
 
@@ -144,7 +144,7 @@ class NormalizedProduct(BaseModel):
         if isinstance(v, str):
             try:
                 return Decimal(v)
-            except:
+            except ValueError:
                 return None
         return Decimal(str(v))
     

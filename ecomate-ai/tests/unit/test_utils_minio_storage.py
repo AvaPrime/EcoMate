@@ -2,35 +2,23 @@
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional, BinaryIO
-import json
 import io
-from minio import Minio
-from minio.error import S3Error, InvalidResponseError
-from minio.datatypes import Object as MinioObject
+from minio.error import S3Error
 
 from src.utils.minio_storage import (
     MinIOClient,
     StorageConfig,
     StorageResult,
-    StorageError,
     FileMetadata,
-    BucketInfo,
     upload_file,
     download_file,
-    delete_file,
-    list_files,
-    create_bucket,
-    delete_bucket,
-    get_file_metadata,
     generate_presigned_url,
     copy_file,
     move_file,
     sync_directory,
-    compress_and_upload,
-    download_and_extract
+    compress_and_upload
 )
 from src.utils.exceptions import StorageError as StorageException, ValidationError
 

@@ -1,4 +1,4 @@
-import os, json, httpx, base64
+import os, httpx
 from typing import Literal
 
 Task = Literal["draft","reason","classify"]

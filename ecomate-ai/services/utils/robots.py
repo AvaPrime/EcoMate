@@ -13,7 +13,7 @@ def _rp_for(root: str) -> urp.RobotFileParser:
     except Exception:
         # Be conservative if robots.txt unreachable
         rp = urp.RobotFileParser()
-        rp.parse([f"User-agent: *", "Allow: /"])
+        rp.parse(["User-agent: *", "Allow: /"])
     return rp
 
 def allowed(url: str, agent: str = AGENT) -> bool:

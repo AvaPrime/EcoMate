@@ -45,6 +45,6 @@ def parse_pump_table(rows: List[List[str]], url: str, vendor: str | None = None)
                 }),
                 price=price, currency=currency_or_default(None), url=url, sku=sku,
             ).model_dump())
-        except Exception as e:
+        except Exception:
             continue
     return {"suppliers": suppliers, "parts": parts, "report": {"status": "ok", "rows": len(suppliers)}}

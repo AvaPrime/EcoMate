@@ -1,16 +1,14 @@
 """Pytest configuration and shared fixtures for EcoMate AI tests."""
 
 import asyncio
-import json
 import os
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Generator, List
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
 
 # Test configuration
 pytest_plugins = ["pytest_asyncio"]

@@ -1,4 +1,4 @@
-import os, tempfile, subprocess, shutil, json
+import os, tempfile, subprocess, shutil
 from pathlib import Path
 
 REPO = os.getenv("DOCS_REPO", "YOUR_GH_ORG/ecomate-docs")

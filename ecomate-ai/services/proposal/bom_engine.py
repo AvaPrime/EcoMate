@@ -1,9 +1,7 @@
 from typing import List, Dict, Optional, Any
 from .models import Component, BOMItem, BillOfMaterials, ProjectRequirements, ComponentType, SystemSpec
-import json
 import logging
 from datetime import datetime
-import asyncio
 from ..vendors.client import VendorClient
 from ..vendors.models import VendorCredentials
 

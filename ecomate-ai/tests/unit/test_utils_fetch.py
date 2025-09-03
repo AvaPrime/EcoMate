@@ -2,17 +2,14 @@
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from datetime import datetime, timezone
+from unittest.mock import Mock, patch, AsyncMock
 import aiohttp
-from aiohttp import ClientSession, ClientTimeout, ClientError
-from typing import Dict, Any, Optional
+from aiohttp import ClientTimeout
 import json
 
 from src.utils.fetch import (
     FetchClient,
     FetchResult,
-    FetchError,
     RateLimiter,
     RetryConfig,
     fetch_url,
@@ -21,7 +18,6 @@ from src.utils.fetch import (
     validate_url,
     sanitize_headers
 )
-from src.utils.exceptions import NetworkError, ValidationError
 
 
 class TestFetchClient:

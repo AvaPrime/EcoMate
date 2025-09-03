@@ -3,11 +3,9 @@
 import pytest
 import json
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from unittest.mock import Mock, AsyncMock
-from decimal import Decimal
 
-import redis.asyncio as redis
 from redis.asyncio import Redis
 
 

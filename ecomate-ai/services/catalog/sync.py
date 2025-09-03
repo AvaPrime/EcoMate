@@ -1,10 +1,10 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from decimal import Decimal
 from datetime import datetime
 import logging
 from .models import (
     NormalizedProduct, ProductStatus, Currency, ProductImage, 
-    ProductCategory, ProductVariant, ProductAttribute, CatalogSyncResult
+    ProductCategory, ProductVariant, ProductAttribute
 )
 
 logger = logging.getLogger(__name__)

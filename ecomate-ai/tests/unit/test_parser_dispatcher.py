@@ -1,15 +1,14 @@
 """Unit tests for parser dispatcher component."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 import json
-from pathlib import Path
 
 from src.parsers.dispatcher import ParserDispatcher
 from src.parsers.pumps import PumpParser
 from src.parsers.uv_reactors import UVReactorParser
 from src.parsers.llm_fallback import LLMFallbackParser
-from src.utils.exceptions import ParserError, UnsupportedSupplierError
+from src.utils.exceptions import ParserError
 
 
 class TestParserDispatcher:

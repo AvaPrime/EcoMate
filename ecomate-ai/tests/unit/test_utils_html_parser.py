@@ -1,15 +1,11 @@
 """Unit tests for HTML parsing utility functions."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from bs4 import BeautifulSoup, Tag, NavigableString
-from typing import List, Dict, Any, Optional
-import re
+from bs4 import BeautifulSoup
 
 from src.utils.html_parser import (
     HTMLParser,
     HTMLElement,
-    HTMLParseError,
     extract_text,
     extract_links,
     extract_images,
@@ -27,7 +23,6 @@ from src.utils.html_parser import (
     detect_product_info,
     sanitize_html
 )
-from src.utils.exceptions import ValidationError, ParsingError
 
 
 class TestHTMLParser:

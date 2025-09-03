@@ -1,14 +1,11 @@
 """Comprehensive tests for catalog normalization system"""
 
 import pytest
-import asyncio
-from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 
 from .models import (
-    ProductStatus, Currency, ProductVariant, ProductImage, 
-    ProductCategory, ProductAttribute, NormalizedProduct,
+    ProductStatus, Currency, ProductVariant, NormalizedProduct,
     CatalogSyncResult, CatalogFilter
 )
 from .sync import CatalogNormalizer

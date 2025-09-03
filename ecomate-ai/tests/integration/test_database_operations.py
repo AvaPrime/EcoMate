@@ -1,45 +1,31 @@
 """Integration tests for database operations and data persistence."""
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional
+from unittest.mock import Mock, patch, AsyncMock
+from datetime import datetime, timezone
 import json
 from decimal import Decimal
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, OperationalError
-from databases import Database
-import asyncpg
-from redis import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from src.database.models import (
-    Base,
     Product,
     Supplier,
     PriceHistory,
-    ScrapingSession,
-    User,
-    WorkflowExecution,
-    ProductSpecification
+    WorkflowExecution
 )
 from src.database.repositories import (
     ProductRepository,
     SupplierRepository,
     PriceHistoryRepository,
-    UserRepository,
     WorkflowRepository
 )
 from src.database.connection import (
     DatabaseManager,
-    get_database_session,
     get_async_database,
     get_redis_client
 )
-from src.models.product import ProductBase, PumpSpecification, UVReactorSpecification
-from src.models.supplier import Supplier as SupplierModel
 from src.utils.exceptions import DatabaseError, ValidationError
 from src.config.database import DatabaseConfig
 

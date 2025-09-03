@@ -6,10 +6,9 @@ batch processing, and logistics cost calculation.
 
 import asyncio
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 
 import structlog
-from pydantic import ValidationError
 
 from .client import GeospatialClient, GeospatialAPIError
 from .models import (

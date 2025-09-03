@@ -6,15 +6,13 @@ with interactive charts, widgets, and customizable layouts.
 """
 
 import asyncio
-import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
 from uuid import uuid4
 
 from .models import (
-    ChartType, Dashboard, DashboardWidget, IoTMessage, SensorReading,
-    WidgetType, Chart, DataQuery, AlertRule
+    ChartType, Dashboard, DashboardWidget, IoTMessage, WidgetType, Chart, DataQuery
 )
 
 

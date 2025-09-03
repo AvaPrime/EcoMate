@@ -2,44 +2,27 @@
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional
-import json
-from temporalio import workflow, activity
-from temporalio.client import Client, WorkflowHandle
+from typing import List, Dict, Any
 from temporalio.worker import Worker
 from temporalio.testing import WorkflowEnvironment
-from temporalio.common import RetryPolicy
 
 from src.workflows.research_workflow import (
     ResearchWorkflow,
     ResearchWorkflowInput,
-    ResearchWorkflowResult,
-    ProductResearchActivity,
-    DataValidationActivity,
-    StorageActivity
+    ResearchWorkflowResult
 )
 from src.workflows.price_monitoring_workflow import (
     PriceMonitoringWorkflow,
     PriceMonitoringInput,
-    PriceMonitoringResult,
-    PriceCheckActivity,
-    NotificationActivity,
-    HistoryUpdateActivity
+    PriceMonitoringResult
 )
 from src.workflows.data_processing_workflow import (
     DataProcessingWorkflow,
     DataProcessingInput,
-    DataProcessingResult,
-    DataCleaningActivity,
-    DataEnrichmentActivity,
-    DataPersistenceActivity
+    DataProcessingResult
 )
-from src.models.product import ProductBase, PumpSpecification, UVReactorSpecification
-from src.models.supplier import Supplier
-from src.models.scraping import ScrapingResult
-from src.utils.exceptions import WorkflowError, ActivityError, ValidationError
+from src.utils.exceptions import ActivityError
 
 
 class TestResearchWorkflow:

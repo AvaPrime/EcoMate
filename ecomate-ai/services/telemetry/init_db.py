@@ -8,8 +8,6 @@ dynamic baselines, and alert management.
 import asyncio
 import asyncpg
 import os
-from datetime import datetime
-from typing import Optional
 import logging
 
 # Configure logging

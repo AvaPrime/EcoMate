@@ -1,6 +1,5 @@
-from typing import List, Optional, Dict, Any, Tuple
-from datetime import datetime, timedelta
-import asyncio
+from typing import List, Optional, Dict
+from datetime import datetime
 import asyncpg
 import numpy as np
 from contextlib import asynccontextmanager
@@ -8,7 +7,7 @@ import logging
 from .models import (
     TelemetryData, DynamicBaseline, BaselineConfig, Alert, AlertRule,
     TelemetryQuery, TelemetryResponse, BaselineResponse, AlertResponse,
-    AlertSeverity, AlertStatus
+    AlertSeverity
 )
 
 logger = logging.getLogger(__name__)
@@ -309,7 +308,7 @@ class TelemetryStore:
             filtered_values = values[z_scores < config.outlier_threshold]
             
             if len(filtered_values) < config.min_samples:
-                logger.warning(f"Too many outliers removed, using original data")
+                logger.warning("Too many outliers removed, using original data")
                 filtered_values = values
             
             # Calculate statistics

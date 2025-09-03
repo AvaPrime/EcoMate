@@ -1,13 +1,11 @@
 """Unit tests for pump parser components."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from bs4 import BeautifulSoup
 import json
-from pathlib import Path
 
 from src.parsers.pumps import PumpParser
-from src.models.product import PumpSpecification
 from src.utils.exceptions import ParserError, ValidationError
 
 

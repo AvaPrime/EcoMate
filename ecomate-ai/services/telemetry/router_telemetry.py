@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Body
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
-from .workflows_alerts import TelemetryAlertWorkflow, EnhancedTelemetryWorkflow, TelemetryWorkflowOrchestrator
+from .workflows_alerts import EnhancedTelemetryWorkflow, TelemetryWorkflowOrchestrator
 from .models import (
-    TelemetryIn, TelemetryQuery, BaselineConfig, Alert, 
-    TelemetryResponse, BaselineResponse, AlertResponse, SystemMetrics
+    TelemetryIn, BaselineConfig, TelemetryResponse, BaselineResponse, AlertResponse, SystemMetrics
 )
 from .store import get_telemetry_store
 import logging

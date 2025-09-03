@@ -5,13 +5,12 @@ Pydantic models for IoT devices, messages, alerts, dashboards, and configuration
 Provides comprehensive data validation and serialization for the IoT ecosystem.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from pydantic import BaseModel, Field, validator, root_validator
-from pydantic.types import Json
+from pydantic import BaseModel, Field, validator
 
 
 # Enumerations

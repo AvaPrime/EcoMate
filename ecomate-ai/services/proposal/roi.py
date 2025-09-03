@@ -1,4 +1,3 @@
-import math
 from .models import Quote
 
 def payback_years(quote: Quote, annual_savings: float) -> float | None:

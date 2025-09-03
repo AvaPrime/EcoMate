@@ -3,12 +3,10 @@
 import pytest
 from decimal import Decimal
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any
 from unittest.mock import Mock
 
 from src.models.product import ProductBase, PumpSpecification, UVReactorSpecification
 from src.models.supplier import Supplier
-from src.database.models import Product, PriceHistory, WorkflowExecution
 
 
 @pytest.fixture

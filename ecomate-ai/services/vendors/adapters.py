@@ -1,6 +1,5 @@
 """Vendor-specific adapter implementations for different suppliers."""
 
-import asyncio
 import aiohttp
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta

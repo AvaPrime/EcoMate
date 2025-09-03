@@ -4,14 +4,12 @@ This module contains comprehensive tests for the geospatial service components
 including unit tests, integration tests, and mock tests.
 """
 
-import asyncio
 import os
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from httpx import Response
 
 from .client import GeospatialClient, GeospatialAPIError
 from .models import (

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from temporalio.client import Client
 from typing import Optional, List
-from .models import CatalogSyncResult, CatalogFilter
+from .models import CatalogSyncResult
 from .activities_catalog import activity_catalog_sync, activity_catalog_sync_all
 import logging
 

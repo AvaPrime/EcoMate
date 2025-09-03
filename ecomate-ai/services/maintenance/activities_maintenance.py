@@ -1,6 +1,6 @@
 from services.utils.github_pr import open_pr
 from .scheduler import tasks_for, AssetBasedScheduler
-from .models import Asset, AssetType, AssetCondition, MaintenancePlan
+from .models import Asset, AssetType, AssetCondition
 import json
 import logging
 from datetime import datetime, date

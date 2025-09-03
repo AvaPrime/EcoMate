@@ -7,7 +7,6 @@ including Open-Meteo, NASA POWER, and other weather APIs.
 from datetime import datetime, date
 from enum import Enum
 from typing import Dict, List, Optional, Union
-from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 

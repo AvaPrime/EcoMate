@@ -2,20 +2,17 @@
 
 import asyncio
 import logging
-from datetime import datetime, date, timedelta
-from typing import Dict, List, Optional, Any, Union
+from datetime import datetime, date
+from typing import Dict, List, Optional, Any
 from urllib.parse import urljoin, urlencode
 
 import aiohttp
-import httpx
-from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
 from .models import (
     StandardsBody,
     RegulatoryStandard,
     StandardsUpdate,
-    ComplianceStatus,
     UpdateType,
     StandardCategory,
     AlertSeverity,
