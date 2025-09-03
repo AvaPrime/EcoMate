@@ -1,0 +1,732 @@
+# EcoMate Platform – Roadmap Scaffold (Implementation Pack)
+
+This pack extends `ecomate-ai` with stubs and wiring for the **Proposal & Computation Agent**, **E‑commerce Catalog Agent**, **Maintenance Scheduler**, **Compliance Agent**, and **Telemetry Alerts**. Everything is designed to drop into your existing repo, reuse the current Temporal/MinIO/GitHub flows, and be incrementally implemented.
+
+> **Pattern**: parser‑first (deterministic), LLM‑fallback (flexible), PR‑driven (governed).
+
+---
+
+## 0) Folder layout (add under `ecomate-ai/`)
+```
+services/
+  proposal/
+    models.py
+    bom_engine.py
+    cost_model.py
+    roi.py
+    render.py
+    templates/proposal.md.j2
+    activities_proposal.py
+    workflows_proposal.py
+    router_proposal.py
+  catalog/
+    connectors/
+      shopify.py
+      woocommerce.py
+      medusa.py
+    sync.py
+    bundling.py
+    activities_catalog.py
+    workflows_catalog.py
+    router_catalog.py
+  maintenance/
+    models.py
+    scheduler.py
+    activities_maintenance.py
+    workflows_maintenance.py
+    router_maintenance.py
+  compliance/
+    rules/
+      sans_water.yaml
+      sans_electrical.yaml
+    engine.py
+    activities_compliance.py
+    workflows_compliance.py
+    router_compliance.py
+  telemetry/
+    models.py
+    ingestor.py
+    activities_alerts.py
+    workflows_alerts.py
+    router_telemetry.py
+shared/
+  finance.py
+  geo.py
+  pdf.py
+```
+
+Add endpoints to **`services/api/main.py`** by importing each `router_*.py` and including `app.include_router(...)`.
+
+Append to **`.env.example`**:
+```env
+# Proposals & cost
+LABOUR_RATE_ZAR=450         # per hour
+LOGISTICS_RATE_ZAR_PER_KM=18
+DEFAULT_MARGIN=0.18
+DISCOUNT_RATE=0.12          # for NPV/IRR
+
+# Store connectors (optional)
+SHOPIFY_STORE_URL=
+SHOPIFY_ADMIN_TOKEN=
+WOOCOMMERCE_URL=
+WOOCOMMERCE_KEY=
+WOOCOMMERCE_SECRET=
+MEDUSA_API_URL=
+MEDUSA_API_TOKEN=
+
+# Telemetry (optional)
+ALERT_EMAIL=
+HEADROOM_FACTOR=0.80        # alert when performance drops below 80% of expected
+```
+
+Update **`Makefile`** (append):
+```make
+proposal:
+	curl -X POST http://localhost:8080/proposals/compute \
+	  -H 'Content-Type: application/json' \
+	  -d '{"client":{"name":"Kozula Estate","location":"Garden Route"},"spec":{"type":"wastewater","capacity_lpd":50000},"assumptions":{"distance_km":120}}'
+
+catalog-sync:
+	curl -X POST http://localhost:8080/catalog/sync -H 'Content-Type: application/json' -d '{"source":"shopify"}'
+
+maint-plan:
+	curl -X POST http://localhost:8080/maintenance/plan -H 'Content-Type: application/json' -d '{"system_id":"WWTP-001"}'
+
+compliance-check:
+	curl -X POST http://localhost:8080/compliance/check -H 'Content-Type: application/json' -d '{"system_id":"WWTP-001","rules":["sans_water"]}'
+
+telemetry-demo:
+	curl -X POST http://localhost:8080/telemetry/ingest -H 'Content-Type: application/json' -d '{"system_id":"WWTP-001","metrics":{"flow_m3h":12.1,"uv_dose_mj_cm2":33}}'
+```
+
+---
+
+## 1) Proposal & Computation Agent
+
+### `services/proposal/models.py`
+```python
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class ClientContext(BaseModel):
+    name: str
+    location: Optional[str] = None
+    sector: Optional[str] = None  # estate, lodge, village, yacht
+
+class SystemSpec(BaseModel):
+    type: str = Field(..., description="wastewater|rainwater|heating")
+    capacity_lpd: Optional[int] = None  # litres/day
+    households: Optional[int] = None
+    offgrid: bool = False
+
+class Assumptions(BaseModel):
+    distance_km: float = 0
+    labour_rate_zar: Optional[float] = None
+    logistics_rate_zar_per_km: Optional[float] = None
+    margin: Optional[float] = None
+
+class BOMItem(BaseModel):
+    sku: str
+    description: str
+    qty: float
+    unit: str = "ea"
+    unit_price: float
+    currency: str = "ZAR"
+
+class Quote(BaseModel):
+    bom: List[BOMItem]
+    materials_subtotal: float
+    labour: float
+    logistics: float
+    opex_year1: float
+    total_before_margin: float
+    total_quote: float
+
+class ROIResult(BaseModel):
+    payback_years: Optional[float]
+    npv: Optional[float]
+    irr: Optional[float]
+```
+
+### `services/proposal/bom_engine.py`
+```python
+import csv
+from typing import List
+from .models import SystemSpec, BOMItem
+
+PARTS = "data/parts_list.csv"
+SUPPLIERS = "data/suppliers.csv"
+
+# VERY simple heuristic stub — replace with real selector logic
+
+def base_bom_for(spec: SystemSpec) -> List[BOMItem]:
+    items: List[BOMItem] = []
+    if spec.type == "wastewater":
+        items.append(BOMItem(sku="BLOWER-055", description="Aeration blower 0.55kW", qty=2, unit_price=_price("BLOWER-055")))
+        items.append(BOMItem(sku="UV-REACTOR-01", description="UV Reactor", qty=1, unit_price=_price("UV-REACTOR-01")))
+        items.append(BOMItem(sku="TANK-10000L", description="10,000L Tank", qty=3, unit_price=_price("TANK-10000L")))
+    return items
+
+def _price(sku: str) -> float:
+    try:
+        with open(SUPPLIERS, newline='', encoding='utf-8') as f:
+            for r in csv.DictReader(f):
+                if (r.get('sku') or '').upper() == sku.upper():
+                    return float(r.get('price') or 0)
+    except FileNotFoundError:
+        pass
+    return 0.0
+```
+
+### `services/proposal/cost_model.py`
+```python
+import os
+from .models import BOMItem, Quote
+
+LABOUR_RATE = float(os.getenv('LABOUR_RATE_ZAR', '450'))
+LOGI_RATE = float(os.getenv('LOGISTICS_RATE_ZAR_PER_KM', '18'))
+MARGIN = float(os.getenv('DEFAULT_MARGIN', '0.18'))
+
+def compute_quote(bom: list[BOMItem], distance_km: float) -> Quote:
+    materials = sum(i.qty * i.unit_price for i in bom)
+    labour = max(1.0, 0.12 * materials / LABOUR_RATE) * LABOUR_RATE  # naive: ~12% of materials value in hours
+    logistics = distance_km * LOGI_RATE
+    opex_year1 = 0.03 * materials  # naive assumption
+    pre_margin = materials + labour + logistics
+    total = pre_margin * (1 + MARGIN)
+    return Quote(
+        bom=bom,
+        materials_subtotal=round(materials,2),
+        labour=round(labour,2),
+        logistics=round(logistics,2),
+        opex_year1=round(opex_year1,2),
+        total_before_margin=round(pre_margin,2),
+        total_quote=round(total,2),
+    )
+```
+
+### `services/proposal/roi.py`
+```python
+import math
+from .models import Quote
+
+def payback_years(quote: Quote, annual_savings: float) -> float | None:
+    if annual_savings <= 0: return None
+    return round(quote.total_quote / annual_savings, 2)
+
+def npv(annual_cashflows: list[float], discount_rate: float) -> float:
+    return sum(cf / ((1 + discount_rate) ** t) for t, cf in enumerate(annual_cashflows, start=1))
+
+def irr(annual_cashflows: list[float], guess: float = 0.1) -> float | None:
+    # simple Newton method
+    rate = guess
+    for _ in range(100):
+        f = sum(cf / ((1 + rate) ** t) for t, cf in enumerate(annual_cashflows, start=1)) - 1
+        df = sum(-t * cf / ((1 + rate) ** (t + 1)) for t, cf in enumerate(annual_cashflows, start=1))
+        if abs(df) < 1e-8: return None
+        new_rate = rate - f/df
+        if abs(new_rate - rate) < 1e-6: return rate
+        rate = new_rate
+    return None
+```
+
+### `services/proposal/render.py`
+```python
+import os, subprocess, tempfile
+from jinja2 import Template
+from .models import ClientContext, SystemSpec, Quote
+
+TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates', 'proposal.md.j2')
+
+def render_proposal_md(client: ClientContext, spec: SystemSpec, quote: Quote) -> str:
+    with open(TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+        t = Template(f.read())
+    return t.render(client=client.model_dump(), spec=spec.model_dump(), quote=quote.model_dump())
+
+def render_pdf_from_md(md: str) -> bytes | None:
+    # optional Pandoc export if available
+    try:
+        with tempfile.NamedTemporaryFile('w+', suffix='.md', delete=False) as tmp:
+            tmp.write(md)
+            tmp.flush()
+            pdf_path = tmp.name.replace('.md', '.pdf')
+        subprocess.check_call(['pandoc', tmp.name, '-o', pdf_path])
+        with open(pdf_path, 'rb') as f:
+            return f.read()
+    except Exception:
+        return None
+```
+
+### `services/proposal/templates/proposal.md.j2`
+```md
+# EcoMate Proposal — {{ client.name }}
+**Location:** {{ client.location or 'N/A' }}
+
+## System Specification
+- Type: {{ spec.type }}
+- Capacity (LPD): {{ spec.capacity_lpd or 'TBD' }}
+- Off‑grid: {{ 'Yes' if spec.offgrid else 'No' }}
+
+## Bill of Materials (BOM)
+| SKU | Description | Qty | Unit Price | Line Total |
+|---|---:|---:|---:|---:|
+{% for i in quote.bom %}| {{ i.sku }} | {{ i.description }} | {{ i.qty }} | {{ i.unit_price }} | {{ (i.qty * i.unit_price) | round(2) }} |
+{% endfor %}
+
+**Materials:** {{ quote.materials_subtotal }}  
+**Labour:** {{ quote.labour }}  
+**Logistics:** {{ quote.logistics }}  
+**Total (pre‑margin):** {{ quote.total_before_margin }}  
+**Quoted Total:** {{ quote.total_quote }}
+
+*Prepared by EcoMate.*
+```
+
+### `services/proposal/activities_proposal.py`
+```python
+from datetime import datetime, timezone
+from services.utils.github_pr import open_pr
+from services.utils.minio_store import put_bytes
+from .models import ClientContext, SystemSpec, Assumptions
+from .bom_engine import base_bom_for
+from .cost_model import compute_quote
+from .render import render_proposal_md, render_pdf_from_md
+
+async def activity_build_proposal(client: dict, spec: dict, assumptions: dict):
+    ctx = ClientContext(**client); sp = SystemSpec(**spec); ass = Assumptions(**assumptions)
+    bom = base_bom_for(sp)
+    quote = compute_quote(bom, distance_km=ass.distance_km)
+    md = render_proposal_md(ctx, sp, quote)
+    pdf = render_pdf_from_md(md)
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    changes = {f"proposals/{today}_{ctx.name.replace(' ','_')}.md": md}
+    if pdf:
+        url = put_bytes('proposals/pdf', pdf, content_type='application/pdf')
+        changes[f"proposals/{today}_{ctx.name.replace(' ','_')}.pdf.s3url"] = url
+    open_pr(f"bot/proposal-{today}", f"Proposal: {ctx.name} ({today})", changes)
+    return {"materials": quote.materials_subtotal, "total": quote.total_quote}
+```
+
+### `services/proposal/workflows_proposal.py`
+```python
+from temporalio import workflow
+
+@workflow.defn
+class ProposalWorkflow:
+    @workflow.run
+    async def run(self, client: dict, spec: dict, assumptions: dict):
+        res = await workflow.execute_activity("activity_build_proposal", client, spec, assumptions, start_to_close_timeout=600)
+        return res
+```
+
+### `services/proposal/router_proposal.py`
+```python
+from fastapi import APIRouter
+from pydantic import BaseModel
+from temporalio.client import Client
+
+router = APIRouter(prefix="/proposals", tags=["proposals"])
+
+class ProposalReq(BaseModel):
+    client: dict
+    spec: dict
+    assumptions: dict = {}
+
+@router.post('/compute')
+async def compute(req: ProposalReq):
+    client = await Client.connect("localhost:7233")
+    handle = await client.start_workflow(
+        "services.proposal.workflows_proposal.ProposalWorkflow.run",
+        req.client, req.spec, req.assumptions,
+        id="proposal-req", task_queue="ecomate-ai",
+    )
+    return await handle.result()
+```
+
+> **Register** in `services/orchestrator/worker.py`: add `ProposalWorkflow` to workflows and map `"activity_build_proposal"` to `services.proposal.activities_proposal.activity_build_proposal`.
+
+> **Include** in API: in `services/api/main.py`: `from services.proposal.router_proposal import router as proposal_router`; `app.include_router(proposal_router)`.
+
+---
+
+## 2) E‑commerce Catalog Agent
+
+### `services/catalog/connectors/shopify.py`
+```python
+import os, httpx
+
+BASE = os.getenv('SHOPIFY_STORE_URL'); TOKEN = os.getenv('SHOPIFY_ADMIN_TOKEN')
+
+async def fetch_products(limit: int = 50):
+    if not (BASE and TOKEN): return []
+    url = f"{BASE}/admin/api/2024-04/products.json?limit={limit}"
+    async with httpx.AsyncClient(timeout=30, headers={"X-Shopify-Access-Token": TOKEN}) as c:
+        r = await c.get(url); r.raise_for_status(); return r.json().get('products', [])
+```
+
+### `services/catalog/connectors/woocommerce.py`
+```python
+import os, httpx
+BASE = os.getenv('WOOCOMMERCE_URL'); KEY=os.getenv('WOOCOMMERCE_KEY'); SECRET=os.getenv('WOOCOMMERCE_SECRET')
+async def fetch_products(page: int = 1, per_page: int = 50):
+    if not (BASE and KEY and SECRET): return []
+    url = f"{BASE}/wp-json/wc/v3/products?page={page}&per_page={per_page}&consumer_key={KEY}&consumer_secret={SECRET}"
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.get(url); r.raise_for_status(); return r.json()
+```
+
+### `services/catalog/connectors/medusa.py`
+```python
+import os, httpx
+BASE=os.getenv('MEDUSA_API_URL'); TOKEN=os.getenv('MEDUSA_API_TOKEN')
+async def fetch_products(offset: int = 0, limit: int = 50):
+    if not (BASE and TOKEN): return []
+    url = f"{BASE}/admin/products?offset={offset}&limit={limit}"
+    async with httpx.AsyncClient(timeout=30, headers={"Authorization": f"Bearer {TOKEN}"}) as c:
+        r = await c.get(url); r.raise_for_status(); return r.json().get('products', [])
+```
+
+### `services/catalog/sync.py`
+```python
+from typing import List, Dict
+
+FIELDS = ["sku","title","vendor","price","currency","status","url","image"]
+
+def normalize_shopify(ps: list[dict]) -> list[dict]:
+    out = []
+    for p in ps:
+        sku = (p.get('variants') or [{}])[0].get('sku')
+        out.append({
+            "sku": sku or p.get('id'),
+            "title": p.get('title'),
+            "vendor": p.get('vendor'),
+            "price": ((p.get('variants') or [{}])[0].get('price')),
+            "currency": "ZAR",
+            "status": p.get('status','active'),
+            "url": p.get('handle'),
+            "image": ((p.get('images') or [{}])[0].get('src')),
+        })
+    return out
+```
+
+### `services/catalog/bundling.py`
+```python
+# simple rules for upsell/cross-sell/bundles
+
+def suggest_bundle(sku: str) -> list[str]:
+    if sku.startswith('PUMP'): return ['FILTER-SED-20', 'HOSE-FLEX-32MM']
+    if sku.startswith('UV'): return ['SLEEVE-UV', 'LAMP-UV-80W']
+    return []
+```
+
+### `services/catalog/activities_catalog.py`
+```python
+from services.utils.github_pr import open_pr
+from .connectors import shopify, woocommerce, medusa
+from .sync import normalize_shopify
+import json, datetime
+
+async def activity_catalog_sync(source: str = 'shopify'):
+    if source == 'shopify':
+        prods = await shopify.fetch_products()
+        rows = normalize_shopify(prods)
+    elif source == 'woocommerce':
+        prods = await woocommerce.fetch_products()
+        rows = prods  # add normalizer similar to Shopify
+    else:
+        prods = await medusa.fetch_products()
+        rows = prods
+    today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+    body = json.dumps(rows, ensure_ascii=False, indent=2)
+    open_pr(f"bot/catalog-{today}", f"Catalog sync ({source}) {today}", {f"catalog/{source}_{today}.json": body})
+    return {"count": len(rows)}
+```
+
+### `services/catalog/workflows_catalog.py`
+```python
+from temporalio import workflow
+
+@workflow.defn
+class CatalogSyncWorkflow:
+    @workflow.run
+    async def run(self, source: str = 'shopify'):
+        return await workflow.execute_activity('activity_catalog_sync', source, start_to_close_timeout=600)
+```
+
+### `services/catalog/router_catalog.py`
+```python
+from fastapi import APIRouter
+from pydantic import BaseModel
+from temporalio.client import Client
+
+router = APIRouter(prefix='/catalog', tags=['catalog'])
+
+class SyncReq(BaseModel):
+    source: str = 'shopify'
+
+@router.post('/sync')
+async def sync(req: SyncReq):
+    client = await Client.connect('localhost:7233')
+    h = await client.start_workflow('services.catalog.workflows_catalog.CatalogSyncWorkflow.run', req.source, id='catalog-sync', task_queue='ecomate-ai')
+    return await h.result()
+```
+
+> Register `CatalogSyncWorkflow` and `activity_catalog_sync` in the worker; include router in API.
+
+---
+
+## 3) Maintenance Scheduler
+
+### `services/maintenance/models.py`
+```python
+from pydantic import BaseModel
+from typing import Optional
+
+class Asset(BaseModel):
+    system_id: str
+    site: Optional[str] = None
+
+class WorkOrder(BaseModel):
+    system_id: str
+    task: str
+    due_date: str
+    priority: str = 'normal'
+```
+
+### `services/maintenance/scheduler.py`
+```python
+import csv, datetime
+
+SCHEDULE = 'data/maintenance_schedule.csv'
+
+def tasks_for(system_id: str):
+    out = []
+    with open(SCHEDULE, newline='', encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            out.append({
+                'system_id': system_id,
+                'task': r['task'],
+                'due_date': (datetime.date.today() + datetime.timedelta(days=int(r['interval_days']))).isoformat(),
+                'priority': r.get('priority','normal')
+            })
+    return out
+```
+
+### `services/maintenance/activities_maintenance.py`
+```python
+from services.utils.github_pr import open_pr
+from .scheduler import tasks_for
+import json, datetime
+
+async def activity_plan(system_id: str):
+    tasks = tasks_for(system_id)
+    today = datetime.date.today().isoformat()
+    open_pr(f"bot/maintenance-{system_id}-{today}", f"Maintenance plan {system_id}", {f"maintenance/{system_id}_{today}.json": json.dumps(tasks, indent=2)})
+    return {"tasks": len(tasks)}
+```
+
+### `services/maintenance/workflows_maintenance.py`
+```python
+from temporalio import workflow
+
+@workflow.defn
+class MaintenancePlanWorkflow:
+    @workflow.run
+    async def run(self, system_id: str):
+        return await workflow.execute_activity('activity_plan', system_id, start_to_close_timeout=300)
+```
+
+### `services/maintenance/router_maintenance.py`
+```python
+from fastapi import APIRouter
+from pydantic import BaseModel
+from temporalio.client import Client
+
+router = APIRouter(prefix='/maintenance', tags=['maintenance'])
+
+class PlanReq(BaseModel):
+    system_id: str
+
+@router.post('/plan')
+async def plan(req: PlanReq):
+    client = await Client.connect('localhost:7233')
+    h = await client.start_workflow('services.maintenance.workflows_maintenance.MaintenancePlanWorkflow.run', req.system_id, id=f'maint-{req.system_id}', task_queue='ecomate-ai')
+    return await h.result()
+```
+
+---
+
+## 4) Compliance Agent
+
+### `services/compliance/rules/sans_water.yaml`
+```yaml
+min_uv_dose_mj_cm2: 40
+min_storage_days: 1
+```
+
+### `services/compliance/engine.py`
+```python
+import yaml
+
+def load_rules(name: str) -> dict:
+    with open(f'services/compliance/rules/{name}.yaml','r',encoding='utf-8') as f:
+        return yaml.safe_load(f) or {}
+
+def evaluate(spec: dict, rules: dict) -> list[dict]:
+    findings = []
+    if 'uv_dose_mj_cm2' in spec and 'min_uv_dose_mj_cm2' in rules:
+        ok = spec['uv_dose_mj_cm2'] >= rules['min_uv_dose_mj_cm2']
+        findings.append({"rule":"uv_dose","ok": ok, "value": spec['uv_dose_mj_cm2'], "min": rules['min_uv_dose_mj_cm2']})
+    return findings
+```
+
+### `services/compliance/activities_compliance.py`
+```python
+from services.utils.github_pr import open_pr
+from .engine import load_rules, evaluate
+import json, datetime
+
+async def activity_compliance(system_id: str, rules: list[str]):
+    # stub: fetch spec from docs/data by system_id; here we use a demo spec
+    spec = {"uv_dose_mj_cm2": 38}
+    report = {}
+    for r in rules:
+        rs = load_rules(r)
+        report[r] = evaluate(spec, rs)
+    today = datetime.date.today().isoformat()
+    open_pr(f"bot/compliance-{system_id}-{today}", f"Compliance {system_id}", {f"compliance/{system_id}_{today}.json": json.dumps(report, indent=2)})
+    return report
+```
+
+### `services/compliance/workflows_compliance.py`
+```python
+from temporalio import workflow
+
+@workflow.defn
+class ComplianceWorkflow:
+    @workflow.run
+    async def run(self, system_id: str, rules: list[str]):
+        return await workflow.execute_activity('activity_compliance', system_id, rules, start_to_close_timeout=300)
+```
+
+### `services/compliance/router_compliance.py`
+```python
+from fastapi import APIRouter
+from pydantic import BaseModel
+from temporalio.client import Client
+
+router = APIRouter(prefix='/compliance', tags=['compliance'])
+
+class CheckReq(BaseModel):
+    system_id: str
+    rules: list[str]
+
+@router.post('/check')
+async def check(req: CheckReq):
+    client = await Client.connect('localhost:7233')
+    h = await client.start_workflow('services.compliance.workflows_compliance.ComplianceWorkflow.run', req.system_id, req.rules, id=f'comp-{req.system_id}', task_queue='ecomate-ai')
+    return await h.result()
+```
+
+---
+
+## 5) Telemetry Alerts (Digital Twin lite)
+
+### `services/telemetry/models.py`
+```python
+from pydantic import BaseModel
+from typing import Dict
+
+class TelemetryIn(BaseModel):
+    system_id: str
+    metrics: Dict[str, float]
+```
+
+### `services/telemetry/ingestor.py`
+```python
+EXPECTED = {"flow_m3h": 15.0, "uv_dose_mj_cm2": 40.0}
+
+def alert_findings(metrics: dict, headroom: float = 0.8):
+    findings = []
+    for k, exp in EXPECTED.items():
+        val = metrics.get(k)
+        if val is None: continue
+        if val < exp * headroom:
+            findings.append({"metric": k, "value": val, "expected": exp, "status": "low"})
+    return findings
+```
+
+### `services/telemetry/activities_alerts.py`
+```python
+from .ingestor import alert_findings
+
+async def activity_alerts(system_id: str, metrics: dict):
+    return {"system_id": system_id, "alerts": alert_findings(metrics)}
+```
+
+### `services/telemetry/workflows_alerts.py`
+```python
+from temporalio import workflow
+
+@workflow.defn
+class TelemetryAlertWorkflow:
+    @workflow.run
+    async def run(self, system_id: str, metrics: dict):
+        return await workflow.execute_activity('activity_alerts', system_id, metrics, start_to_close_timeout=120)
+```
+
+### `services/telemetry/router_telemetry.py`
+```python
+from fastapi import APIRouter
+from temporalio.client import Client
+from pydantic import BaseModel
+
+router = APIRouter(prefix='/telemetry', tags=['telemetry'])
+
+class TelemetryReq(BaseModel):
+    system_id: str
+    metrics: dict
+
+@router.post('/ingest')
+async def ingest(req: TelemetryReq):
+    client = await Client.connect('localhost:7233')
+    h = await client.start_workflow('services.telemetry.workflows_alerts.TelemetryAlertWorkflow.run', req.system_id, req.metrics, id=f'tel-{req.system_id}', task_queue='ecomate-ai')
+    return await h.result()
+```
+
+---
+
+## 6) Wire everything into Worker & API
+
+- **Worker**: import and register new workflows + activities:
+  - `ProposalWorkflow` / `activity_build_proposal`
+  - `CatalogSyncWorkflow` / `activity_catalog_sync`
+  - `MaintenancePlanWorkflow` / `activity_plan`
+  - `ComplianceWorkflow` / `activity_compliance`
+  - `TelemetryAlertWorkflow` / `activity_alerts`
+
+- **API**: in `services/api/main.py` include routers:
+```python
+from services.proposal.router_proposal import router as proposal_router
+from services.catalog.router_catalog import router as catalog_router
+from services.maintenance.router_maintenance import router as maintenance_router
+from services.compliance.router_compliance import router as compliance_router
+from services.telemetry.router_telemetry import router as telemetry_router
+
+app.include_router(proposal_router)
+app.include_router(catalog_router)
+app.include_router(maintenance_router)
+app.include_router(compliance_router)
+app.include_router(telemetry_router)
+```
+
+---
+
+## 7) Next steps & notes
+- Replace the naive **BOM selector** and **cost model** with domain logic (and link to your vendor parsers for accurate SKUs/price).
+- Add **proposal PDF export** via Pandoc or WeasyPrint in CI, attach artifact links in PRs.
+- Expand **bundling rules** to drive upsells/cross‑sells in the store.
+- Hook **telemetry** to a lightweight time‑series (Timescale, Influx) when you’re ready.
+- Flesh out **compliance rules** (SANS/ISO) and wire them into proposal checks so proposals are compliant by construction.
+
+**End of Pack — paste these files, register worker activities/workflows, include routers, and you have a full roadmap skeleton ready to iterate.**
