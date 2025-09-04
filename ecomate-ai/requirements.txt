@@ -13,4 +13,4 @@ psycopg[binary]==3.2.1
 pgvector==0.3.3
 temporalio==1.7.0
 PyYAML==6.0.2
-pdfplumber==0.11.4
+pdfplumber==0.11.7
