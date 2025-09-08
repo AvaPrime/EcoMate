@@ -47,7 +47,7 @@ jobs:
           pytest -v --cov=services --cov=. --cov-report=xml --cov-report=html --cov-report=term-missing
       
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./ecomate-ai/coverage.xml
           flags: unittests
