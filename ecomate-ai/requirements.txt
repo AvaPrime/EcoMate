@@ -1,5 +1,5 @@
 # Core FastAPI and web framework dependencies
-fastapi==0.114.0
+fastapi==0.117.1
 uvicorn[standard]==0.30.6
 pydantic==2.8.2
 pydantic-settings==2.4.0
