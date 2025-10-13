@@ -63,7 +63,7 @@ pint==0.24.4
 python-slugify==8.0.4
 python-dateutil==2.8.2
 typing-extensions==4.8.0
-click==8.1.7
+click==8.3.0
 rich==13.7.0
 
 # Monitoring and observability
