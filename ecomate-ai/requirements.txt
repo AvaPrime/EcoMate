@@ -58,7 +58,7 @@ json5==0.9.14
 boto3==1.34.152
 
 # Utilities and configuration
-python-dotenv==1.0.1
+python-dotenv==1.2.1
 pint==0.24.4
 python-slugify==8.0.4
 python-dateutil==2.8.2
