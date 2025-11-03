@@ -21,7 +21,7 @@ jobs:
             git commit -m "chore(audit): update report"
           fi
       - name: Open PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           title: "chore(audit): weekly repo audit report"
           branch: chore/audit-report
